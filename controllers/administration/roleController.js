@@ -24,7 +24,7 @@ const createRole = async (req, res) => {
       createdBy: req.user?.id || "system" // Assuming you have user info in req.user
     });
 
-    res.status(201).json({ message: "Role created successfully", role: newRole });
+    res.status(201).json({ message: "Role created successfully", data: newRole });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -38,7 +38,7 @@ const getRoles = async (req, res) => {
       .populate("updatedBy", "name email")
       .sort({ createdAt: -1 });
     
-    res.status(200).json(roles);
+    res.status(200).json({ message: "Roles retrieved successfully", data: roles });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -55,7 +55,7 @@ const getRoleById = async (req, res) => {
       return res.status(404).json({ message: "Role not found" });
     }
     
-    res.status(200).json(role);
+    res.status(200).json({ message: "Role retrieved successfully", data: role });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -91,7 +91,7 @@ const updateRole = async (req, res) => {
       { new: true, runValidators: true }
     ).populate("createdBy", "name email").populate("updatedBy", "name email");
 
-    res.status(200).json({ message: "Role updated successfully", role: updatedRole });
+    res.status(200).json({ message: "Role updated successfully", data: updatedRole });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -134,7 +134,7 @@ const getUsersByRole = async (req, res) => {
       .select("name email role lastLogin createdAt")
       .sort({ createdAt: -1 });
 
-    res.status(200).json(users);
+    res.status(200).json({ message: "Users retrieved successfully", data: users });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -166,7 +166,7 @@ const assignRoleToUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ message: "Role assigned successfully", user });
+    res.status(200).json({ message: "Role assigned successfully", data: user });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -182,7 +182,7 @@ const getRolePermissions = async (req, res) => {
       return res.status(404).json({ message: "Role not found" });
     }
 
-    res.status(200).json({ permissions: role.permissions });
+    res.status(200).json({ message: "Permissions retrieved successfully", data: { permissions: role.permissions } });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

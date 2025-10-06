@@ -34,7 +34,7 @@ const createTopic = async (req, res) => {
       await existingModule.save();
     }
 
-    res.status(201).json({ message: "Topic created successfully", topic: newTopic });
+    res.status(201).json({ message: "Topic created successfully", data: newTopic });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -44,7 +44,7 @@ const createTopic = async (req, res) => {
 const getTopics = async (req, res) => {
   try {
     const topics = await Topic.find().populate("module", "moduleName");
-    res.status(200).json(topics);
+    res.status(200).json({ message: "Topics retrieved successfully", data: topics });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -55,7 +55,7 @@ const getTopicById = async (req, res) => {
   try {
     const topic = await Topic.findById(req.params.id).populate("module", "moduleName");
     if (!topic) return res.status(404).json({ message: "Topic not found" });
-    res.status(200).json(topic);
+    res.status(200).json({ message: "Topic retrieved successfully", data: topic });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -107,7 +107,7 @@ const updateTopic = async (req, res) => {
       runValidators: true,
     }).populate("module", "moduleName");
 
-    res.status(200).json({ message: "Topic updated", topic: updated });
+    res.status(200).json({ message: "Topic updated successfully", data: updated });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -129,7 +129,7 @@ const deleteTopic = async (req, res) => {
       await module.save();
     }
 
-    res.status(200).json({ message: "Topic deleted" });
+    res.status(200).json({ message: "Topic deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

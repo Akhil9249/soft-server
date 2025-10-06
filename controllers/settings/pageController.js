@@ -15,7 +15,7 @@ const createPage = async (req, res) => {
     if (exists) return res.status(400).json({ message: "Page slug already exists" });
 
     const newPage = await Page.create({ menuName, pageTitle, pageSlug, pageContent, metaKeyword });
-    res.status(201).json({ message: "Page created successfully", page: newPage });
+    res.status(201).json({ message: "Page created successfully", data: newPage });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -25,7 +25,7 @@ const createPage = async (req, res) => {
 const getPages = async (req, res) => {
   try {
     const pages = await Page.find().sort({ createdAt: -1 });
-    res.status(200).json(pages);
+    res.status(200).json({ message: "Pages retrieved successfully", data: pages });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -36,7 +36,7 @@ const getPageBySlug = async (req, res) => {
   try {
     const page = await Page.findOne({ pageSlug: req.params.slug });
     if (!page) return res.status(404).json({ message: "Page not found" });
-    res.status(200).json(page);
+    res.status(200).json({ message: "Page retrieved successfully", data: page });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -51,7 +51,7 @@ const updatePage = async (req, res) => {
     });
 
     if (!updated) return res.status(404).json({ message: "Page not found" });
-    res.status(200).json({ message: "Page updated", page: updated });
+    res.status(200).json({ message: "Page updated successfully", data: updated });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -62,7 +62,7 @@ const deletePage = async (req, res) => {
   try {
     const deleted = await Page.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Page not found" });
-    res.status(200).json({ message: "Page deleted" });
+    res.status(200).json({ message: "Page deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

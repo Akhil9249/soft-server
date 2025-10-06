@@ -24,7 +24,7 @@ const createNotification = async (req, res) => {
       console.log("📢 Push notification triggered!");
     }
 
-    res.status(201).json({ message: "Notification created successfully", notification: newNotification });
+    res.status(201).json({ message: "Notification created successfully", data: newNotification });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -34,7 +34,7 @@ const createNotification = async (req, res) => {
 const getNotifications = async (req, res) => {
   try {
     const notifications = await Notification.find().sort({ createdAt: -1 });
-    res.status(200).json(notifications);
+    res.status(200).json({ message: "Notifications retrieved successfully", data: notifications });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -45,7 +45,7 @@ const getNotificationById = async (req, res) => {
   try {
     const notification = await Notification.findById(req.params.id);
     if (!notification) return res.status(404).json({ message: "Notification not found" });
-    res.status(200).json(notification);
+    res.status(200).json({ message: "Notification retrieved successfully", data: notification });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -59,7 +59,7 @@ const updateNotification = async (req, res) => {
       runValidators: true,
     });
     if (!updated) return res.status(404).json({ message: "Notification not found" });
-    res.status(200).json({ message: "Notification updated", notification: updated });
+    res.status(200).json({ message: "Notification updated successfully", data: updated });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -70,7 +70,7 @@ const deleteNotification = async (req, res) => {
   try {
     const deleted = await Notification.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Notification not found" });
-    res.status(200).json({ message: "Notification deleted" });
+    res.status(200).json({ message: "Notification deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

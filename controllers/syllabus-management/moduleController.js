@@ -36,7 +36,7 @@ const createModule = async (req, res) => {
     existingCourse.totalModules = existingCourse.modules.length;
     await existingCourse.save();
 
-    res.status(201).json({ message: "Module created successfully", module: newModule });
+    res.status(201).json({ message: "Module created successfully", data: newModule });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -48,7 +48,7 @@ const getModules = async (req, res) => {
     const modules = await Module.find()
       .populate("course", "courseName")
       .populate("topics", "topicName");
-    res.status(200).json(modules);
+    res.status(200).json({ message: "Modules retrieved successfully", data: modules });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -61,7 +61,7 @@ const getModuleById = async (req, res) => {
       .populate("course", "courseName")
       .populate("topics", "topicName");
     if (!module) return res.status(404).json({ message: "Module not found" });
-    res.status(200).json(module);
+    res.status(200).json({ message: "Module retrieved successfully", data: module });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -109,7 +109,7 @@ const updateModule = async (req, res) => {
       .populate("course", "courseName")
       .populate("topics", "topicName");
 
-    res.status(200).json({ message: "Module updated", module: updated });
+    res.status(200).json({ message: "Module updated successfully", data: updated });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -131,7 +131,7 @@ const deleteModule = async (req, res) => {
       await course.save();
     }
 
-    res.status(200).json({ message: "Module deleted" });
+    res.status(200).json({ message: "Module deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

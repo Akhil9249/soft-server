@@ -29,7 +29,7 @@ const createBranch = async (req, res) => {
 
     res.status(201).json({ 
       message: "Branch created successfully", 
-      branch: newBranch 
+      data: newBranch 
     });
   } catch (error) {
     console.log("Error creating branch:", error);
@@ -45,7 +45,7 @@ const getBranches = async (req, res) => {
     const branches = await Branch.find().sort({ createdAt: -1 });
     console.log("Found branches:", branches.length);
     
-    res.status(200).json(branches);
+    res.status(200).json({ message: "Branches retrieved successfully", data: branches });
   } catch (error) {
     console.log("Error getting branches:", error);
     res.status(500).json({ message: error.message });
@@ -59,7 +59,7 @@ const getBranchById = async (req, res) => {
     if (!branch) {
       return res.status(404).json({ message: "Branch not found" });
     }
-    res.status(200).json(branch);
+    res.status(200).json({ message: "Branch retrieved successfully", data: branch });
   } catch (error) {
     console.log("Error getting branch:", error);
     res.status(500).json({ message: error.message });
@@ -96,7 +96,7 @@ const updateBranch = async (req, res) => {
     
     res.status(200).json({ 
       message: "Branch updated successfully", 
-      branch: updated 
+      data: updated 
     });
   } catch (error) {
     console.log("Error updating branch:", error);
@@ -131,7 +131,7 @@ const toggleBranchStatus = async (req, res) => {
 
     res.status(200).json({ 
       message: `Branch ${branch.isActive ? 'activated' : 'deactivated'} successfully`, 
-      branch 
+      data: branch 
     });
   } catch (error) {
     console.log("Error toggling branch status:", error);

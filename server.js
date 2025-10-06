@@ -5,7 +5,7 @@ const morgan = require("morgan");
 const connectDb = require("./config/db");
 
 
-const userRoute = require('./routes/userRoute');
+const registerAndLoginRoute = require('./routes/registerAndLoginRoute');
 const mentorRoutes = require('./routes/mentorRoutes');
 const internRoutes = require('./routes/internRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
@@ -71,7 +71,7 @@ app.get("/", (req, res) => {
 
 
 
-app.use("/api", userRoute);
+app.use("/api", registerAndLoginRoute);
 
 app.use("/api/mentor", mentorRoutes);
 app.use("/api/intern", internRoutes);

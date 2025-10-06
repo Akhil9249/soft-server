@@ -23,7 +23,7 @@ const createBatch = async (req, res) => {
       interns: interns ? interns.map(intern => intern.internId) : []
     });
 
-    res.status(201).json({ message: "Batch created successfully", batch: newBatch });
+    res.status(201).json({ message: "Batch created successfully", data: newBatch });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: error.message });
@@ -38,7 +38,7 @@ const getBatches = async (req, res) => {
       .populate("branch", "branchName")
       .populate("interns", "fullName email course");
     console.log('Found batches:', batches.length);
-    res.status(200).json(batches);
+    res.status(200).json({ message: "Batches retrieved successfully", data: batches });
   } catch (error) {
     console.error('Error fetching batches:', error);
     res.status(500).json({ message: error.message });
@@ -52,7 +52,7 @@ const getBatchById = async (req, res) => {
       .populate("branch", "branchName")
       .populate("interns", "fullName email course");
     if (!batch) return res.status(404).json({ message: "Batch not found" });
-    res.status(200).json(batch);
+    res.status(200).json({ message: "Batch retrieved successfully", data: batch });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -82,7 +82,7 @@ const updateBatch = async (req, res) => {
     .populate("interns", "fullName email course");
 
     if (!updated) return res.status(404).json({ message: "Batch not found" });
-    res.status(200).json({ message: "Batch updated", batch: updated });
+    res.status(200).json({ message: "Batch updated successfully", data: updated });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -93,7 +93,7 @@ const deleteBatch = async (req, res) => {
   try {
     const deleted = await Batch.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Batch not found" });
-    res.status(200).json({ message: "Batch deleted" });
+    res.status(200).json({ message: "Batch deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -125,7 +125,7 @@ const addIntern = async (req, res) => {
       .populate("branch", "branchName")
       .populate("interns", "fullName email course");
 
-    res.status(201).json({ message: "Intern added successfully", batch: populatedBatch });
+    res.status(201).json({ message: "Intern added successfully", data: populatedBatch });
   } catch (error) {
     console.error("Error adding intern:", error);
     res.status(500).json({ message: error.message });
@@ -144,7 +144,7 @@ const removeIntern = async (req, res) => {
     batch.totalInterns = batch.interns.length;
     await batch.save();
 
-    res.status(200).json({ message: "Intern removed successfully", batch });
+    res.status(200).json({ message: "Intern removed successfully", data: batch });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

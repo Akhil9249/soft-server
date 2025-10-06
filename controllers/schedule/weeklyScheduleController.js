@@ -70,7 +70,7 @@ const createWeeklySchedule = async (req, res) => {
 
     const newWeeklySchedule = await WeeklySchedule.create({ mentor, schedule });
     console.log('Weekly schedule created successfully:', newWeeklySchedule);
-    res.status(201).json({ message: "Weekly schedule created successfully", weeklySchedule: newWeeklySchedule });
+    res.status(201).json({ message: "Weekly schedule created successfully", data: newWeeklySchedule });
   } catch (error) {
     console.error('Error creating weekly schedule:', error);
     res.status(500).json({ message: error.message });
@@ -95,7 +95,7 @@ const getWeeklySchedules = async (req, res) => {
         select: 'batchName branchName'
       });
     console.log('Found weekly schedules:', weeklySchedules.length);
-    res.status(200).json(weeklySchedules);
+    res.status(200).json({ message: "Weekly schedules retrieved successfully", data: weeklySchedules });
   } catch (error) {
     console.error('Error fetching weekly schedules:', error);
     res.status(500).json({ message: error.message });
@@ -120,7 +120,7 @@ const getWeeklyScheduleById = async (req, res) => {
       });
 
     if (!weeklySchedule) return res.status(404).json({ message: "Weekly schedule not found" });
-    res.status(200).json(weeklySchedule);
+    res.status(200).json({ message: "Weekly schedule retrieved successfully", data: weeklySchedule });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -157,7 +157,7 @@ const updateWeeklySchedule = async (req, res) => {
       });
 
     if (!updated) return res.status(404).json({ message: "Weekly schedule not found" });
-    res.status(200).json({ message: "Weekly schedule updated", weeklySchedule: updated });
+    res.status(200).json({ message: "Weekly schedule updated successfully", data: updated });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -168,7 +168,7 @@ const deleteWeeklySchedule = async (req, res) => {
   try {
     const deleted = await WeeklySchedule.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Weekly schedule not found" });
-    res.status(200).json({ message: "Weekly schedule deleted" });
+    res.status(200).json({ message: "Weekly schedule deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -213,7 +213,7 @@ const addTimeToSchedule = async (req, res) => {
         select: 'batchName branchName'
       });
 
-    res.status(200).json({ message: "Time added to schedule", weeklySchedule: updatedSchedule });
+    res.status(200).json({ message: "Time added to schedule successfully", data: updatedSchedule });
   } catch (error) {
     console.error('Error adding time to schedule:', error);
     res.status(500).json({ message: error.message });
@@ -264,7 +264,7 @@ const addSubDetailsToTime = async (req, res) => {
         select: 'batchName branchName'
       });
 
-    res.status(200).json({ message: "Sub details added to time", weeklySchedule: updatedSchedule });
+    res.status(200).json({ message: "Sub details added to time successfully", data: updatedSchedule });
   } catch (error) {
     console.error('Error adding sub details to time:', error);
     res.status(500).json({ message: error.message });
@@ -310,7 +310,7 @@ const addBatchToSubDetails = async (req, res) => {
         select: 'batchName branchName'
       });
 
-    res.status(200).json({ message: "Batch added to sub details", weeklySchedule: updatedSchedule });
+    res.status(200).json({ message: "Batch added to sub details successfully", data: updatedSchedule });
   } catch (error) {
     console.error('Error adding batch to sub details:', error);
     res.status(500).json({ message: error.message });
@@ -363,7 +363,7 @@ const removeBatchFromSubDetails = async (req, res) => {
         select: 'batchName branchName'
       });
 
-    res.status(200).json({ message: "Batch removed from sub details", weeklySchedule: updatedSchedule });
+    res.status(200).json({ message: "Batch removed from sub details successfully", data: updatedSchedule });
   } catch (error) {
     console.error('Error removing batch from sub details:', error);
     res.status(500).json({ message: error.message });

@@ -73,7 +73,7 @@ const createTask = async (req, res) => {
 
     res.status(201).json({
       message: "Task created successfully",
-      task: newTask
+      data: newTask
     });
   } catch (error) {
     console.log("Error creating task:", error);
@@ -87,7 +87,10 @@ const getTasks = async (req, res) => {
     console.log('Fetching tasks...');
     const tasks = await Task.find({ isActive: true }).sort({ createdAt: -1 });
     console.log('Found tasks:', tasks.length);
-    res.status(200).json(tasks);
+    res.status(200).json({
+      message: "Tasks retrieved successfully",
+      data: tasks
+    });
   } catch (error) {
     console.error('Error fetching tasks:', error);
     res.status(500).json({ message: error.message });
@@ -103,7 +106,10 @@ const getTaskById = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    res.status(200).json(task);
+    res.status(200).json({
+      message: "Task retrieved successfully",
+      data: task
+    });
   } catch (error) {
     console.error('Error fetching task:', error);
     res.status(500).json({ message: error.message });
@@ -173,7 +179,7 @@ const updateTask = async (req, res) => {
 
     res.status(200).json({
       message: "Task updated successfully",
-      task: updated
+      data: updated
     });
   } catch (error) {
     console.log("Error updating task:", error);
@@ -196,7 +202,7 @@ const deleteTask = async (req, res) => {
 
     res.status(200).json({
       message: "Task deleted successfully",
-      task: updated
+      data: updated
     });
   } catch (error) {
     console.log("Error deleting task:", error);
@@ -213,7 +219,10 @@ const getTasksByBatch = async (req, res) => {
       isActive: true 
     }).sort({ createdAt: -1 });
 
-    res.status(200).json(tasks);
+    res.status(200).json({
+      message: "Tasks retrieved successfully",
+      data: tasks
+    });
   } catch (error) {
     console.error('Error fetching tasks by batch:', error);
     res.status(500).json({ message: error.message });
@@ -229,7 +238,10 @@ const getTasksByMentor = async (req, res) => {
       isActive: true 
     }).sort({ createdAt: -1 });
 
-    res.status(200).json(tasks);
+    res.status(200).json({
+      message: "Tasks retrieved successfully",
+      data: tasks
+    });
   } catch (error) {
     console.error('Error fetching tasks by mentor:', error);
     res.status(500).json({ message: error.message });
@@ -245,7 +257,10 @@ const getTasksByStatus = async (req, res) => {
       isActive: true 
     }).sort({ createdAt: -1 });
 
-    res.status(200).json(tasks);
+    res.status(200).json({
+      message: "Tasks retrieved successfully",
+      data: tasks
+    });
   } catch (error) {
     console.error('Error fetching tasks by status:', error);
     res.status(500).json({ message: error.message });
@@ -276,7 +291,7 @@ const updateTaskStatus = async (req, res) => {
 
     res.status(200).json({
       message: "Task status updated successfully",
-      task: updated
+      data: updated
     });
   } catch (error) {
     console.log("Error updating task status:", error);
@@ -315,7 +330,7 @@ const updateTaskMarks = async (req, res) => {
 
     res.status(200).json({
       message: "Task marks updated successfully",
-      task: updated
+      data: updated
     });
   } catch (error) {
     console.log("Error updating task marks:", error);

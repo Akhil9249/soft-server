@@ -38,7 +38,7 @@ const createCourse = async (req, res) => {
     existingCategory.totalCourses = existingCategory.courses.length;
     await existingCategory.save();
 
-    res.status(201).json({ message: "Course created successfully", course: newCourse });
+    res.status(201).json({ message: "Course created successfully", data: newCourse });
   } catch (error) {
     res.status(500).json({ message: error.message }); 
   }
@@ -50,7 +50,7 @@ const getCourses = async (req, res) => {
     const courses = await Course.find()
       .populate("category", "categoryName")
       .populate("modules", "moduleName totalTopics");
-    res.status(200).json(courses);
+    res.status(200).json({ message: "Courses retrieved successfully", data: courses });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -63,7 +63,7 @@ const getCourseById = async (req, res) => {
       .populate("category", "categoryName")
       .populate("modules", "moduleName totalTopics");
     if (!course) return res.status(404).json({ message: "Course not found" });
-    res.status(200).json(course);
+    res.status(200).json({ message: "Course retrieved successfully", data: course });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -111,7 +111,7 @@ const updateCourse = async (req, res) => {
       .populate("category", "categoryName")
       .populate("modules", "moduleName totalTopics");
 
-    res.status(200).json({ message: "Course updated", course: updated });
+    res.status(200).json({ message: "Course updated successfully", data: updated });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -133,7 +133,7 @@ const deleteCourse = async (req, res) => {
       await category.save();
     }
 
-    res.status(200).json({ message: "Course deleted" });
+    res.status(200).json({ message: "Course deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

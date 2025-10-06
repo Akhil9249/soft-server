@@ -15,7 +15,7 @@ const createTiming = async (req, res) => {
 
     const newTiming = await Timing.create({ branch, timeSlot });
     console.log('Timing created successfully:', newTiming);
-    res.status(201).json({ message: "Timing created successfully", timing: newTiming });
+    res.status(201).json({ message: "Timing created successfully", data: newTiming });
   } catch (error) {
     console.error('Error creating timing:', error);
     res.status(500).json({ message: error.message });
@@ -28,7 +28,7 @@ const getTimings = async (req, res) => {
     console.log('Fetching timings...');
     const timings = await Timing.find().populate("branch", "branchName");
     console.log('Found timings:', timings.length);
-    res.status(200).json(timings);
+    res.status(200).json({ message: "Timings retrieved successfully", data: timings });
   } catch (error) {
     console.error('Error fetching timings:', error);
     res.status(500).json({ message: error.message });
@@ -41,7 +41,7 @@ const getTimingById = async (req, res) => {
     const timing = await Timing.findById(req.params.id).populate("branch", "branchName");
 
     if (!timing) return res.status(404).json({ message: "Timing not found" });
-    res.status(200).json(timing);
+    res.status(200).json({ message: "Timing retrieved successfully", data: timing });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -56,7 +56,7 @@ const updateTiming = async (req, res) => {
     }).populate("branch", "branchName");
 
     if (!updated) return res.status(404).json({ message: "Timing not found" });
-    res.status(200).json({ message: "Timing updated", timing: updated });
+    res.status(200).json({ message: "Timing updated successfully", data: updated });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -67,7 +67,7 @@ const deleteTiming = async (req, res) => {
   try {
     const deleted = await Timing.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Timing not found" });
-    res.status(200).json({ message: "Timing deleted" });
+    res.status(200).json({ message: "Timing deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

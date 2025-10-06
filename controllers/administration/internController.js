@@ -50,6 +50,11 @@ const addIntern = async (req, res) => {
       return res.status(400).json({ message: "Gender must be Male, Female, or Other" });
     }
 
+    // Validate role enum if provided
+    if (req.body.role && !["Intern", "Mentor", "Admin"].includes(req.body.role)) {
+      return res.status(400).json({ message: "Role must be Intern, Mentor, or Admin" });
+    }
+
     // Check duplicate email
     const existingEmail = await Intern.findOne({ email });
     if (existingEmail) {
@@ -95,13 +100,16 @@ const addIntern = async (req, res) => {
       companyName,
       jobRole,
       resume,
+      role: req.body.role || "Intern",
       officialEmail,
       password: hashedPassword,
       isActive: true
     });
 
-    // Populate course field for response
-    const populatedIntern = await Intern.findById(newIntern._id).populate('course', 'courseName');
+    // Populate course and branch fields for response
+    const populatedIntern = await Intern.findById(newIntern._id)
+      .populate('course', 'courseName')
+      .populate('branch', 'branchName');
 
     res.status(201).json({ 
       message: "Intern created successfully", 
@@ -115,7 +123,10 @@ const addIntern = async (req, res) => {
 // -------------------- READ All Interns --------------------
 const getInterns = async (req, res) => {
   try {
-    const interns = await Intern.find().populate('course', 'courseName');
+    const interns = await Intern.find()
+      .populate('course', 'courseName')
+      .populate('branch', 'branchName')
+      .sort({ createdAt: -1 });
     res.status(200).json({ 
       message: "Interns fetched successfully", 
       data: interns 
@@ -128,7 +139,9 @@ const getInterns = async (req, res) => {
 // -------------------- READ Single Intern --------------------
 const getInternById = async (req, res) => {
   try {
-    const intern = await Intern.findById(req.params.id).populate('course', 'courseName');
+    const intern = await Intern.findById(req.params.id)
+      .populate('course', 'courseName')
+      .populate('branch', 'branchName');
     if (!intern) return res.status(404).json({ message: "Intern not found" });
     res.status(200).json({ 
       message: "Intern fetched successfully", 
@@ -173,12 +186,18 @@ const updateIntern = async (req, res) => {
       resume,
       officialEmail,
       password,
+      role,
       isActive
     } = req.body;
 
     // Validate gender enum if provided
     if (gender && !["Male", "Female", "Other"].includes(gender)) {
       return res.status(400).json({ message: "Gender must be Male, Female, or Other" });
+    }
+
+    // Validate role enum if provided
+    if (role && !["Intern", "Mentor", "Admin"].includes(role)) {
+      return res.status(400).json({ message: "Role must be Intern, Mentor, or Admin" });
     }
 
     // Validate courseStatus enum if provided
@@ -248,6 +267,7 @@ const updateIntern = async (req, res) => {
       companyName,
       jobRole,
       resume,
+      role,
       officialEmail,
       isActive
     };
@@ -267,7 +287,9 @@ const updateIntern = async (req, res) => {
     const intern = await Intern.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
-    }).populate('course', 'courseName');
+    })
+      .populate('course', 'courseName')
+      .populate('branch', 'branchName');
 
     if (!intern) return res.status(404).json({ message: "Intern not found" });
     res.status(200).json({ 
@@ -314,12 +336,14 @@ const searchInterns = async (req, res) => {
         { email: { $regex: searchRegex } },
         { officialEmail: { $regex: searchRegex } },
         { internPhoneNumber: { $regex: searchRegex } },
-        { branch: { $regex: searchRegex } },
         { batch: { $regex: searchRegex } },
         { companyName: { $regex: searchRegex } },
         { jobRole: { $regex: searchRegex } }
       ]
-    }).populate('course', 'courseName').limit(20); // Limit results to 20 for performance
+    })
+      .populate('course', 'courseName')
+      .populate('branch', 'branchName')
+      .limit(20); // Limit results to 20 for performance
 
     res.status(200).json({ 
       message: `Found ${interns.length} intern(s) matching "${searchTerm}"`,
@@ -330,6 +354,83 @@ const searchInterns = async (req, res) => {
   }
 };
 
+// -------------------- GET INTERNS BY STATUS --------------------
+const getInternsByStatus = async (req, res) => {
+  try {
+    const { status } = req.params; // courseStatus, internSyllabusStatus, or placementStatus
+    const { type } = req.query; // 'course', 'syllabus', or 'placement'
+    
+    let query = {};
+    
+    switch (type) {
+      case 'course':
+        query.courseStatus = status;
+        break;
+      case 'syllabus':
+        query.internSyllabusStatus = status;
+        break;
+      case 'placement':
+        query.placementStatus = status;
+        break;
+      default:
+        return res.status(400).json({ message: "Invalid type parameter. Use 'course', 'syllabus', or 'placement'" });
+    }
+    
+    const interns = await Intern.find(query)
+      .populate('course', 'courseName')
+      .populate('branch', 'branchName')
+      .sort({ createdAt: -1 });
+    
+    res.status(200).json({ 
+      message: `Interns with ${type} status '${status}' fetched successfully`, 
+      data: interns 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Error fetching interns by status" });
+  }
+};
+
+// -------------------- GET INTERNS BY BRANCH --------------------
+const getInternsByBranch = async (req, res) => {
+  try {
+    const { branchId } = req.params;
+    
+    const interns = await Intern.find({ branch: branchId })
+      .populate('course', 'courseName')
+      .populate('branch', 'branchName')
+      .sort({ createdAt: -1 });
+    
+    res.status(200).json({ 
+      message: "Interns by branch fetched successfully", 
+      data: interns 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Error fetching interns by branch" });
+  }
+};
+
+// -------------------- TOGGLE INTERN STATUS --------------------
+const toggleInternStatus = async (req, res) => {
+  try {
+    const intern = await Intern.findById(req.params.id);
+    if (!intern) return res.status(404).json({ message: "Intern not found" });
+    
+    intern.isActive = !intern.isActive;
+    await intern.save();
+    
+    const updatedIntern = await Intern.findById(intern._id)
+      .populate('course', 'courseName')
+      .populate('branch', 'branchName');
+    
+    res.status(200).json({ 
+      message: `Intern ${updatedIntern.isActive ? 'activated' : 'deactivated'} successfully`, 
+      data: updatedIntern 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Error toggling intern status" });
+  }
+};
+
 module.exports = {
   addIntern,
   getInterns,
@@ -337,4 +438,7 @@ module.exports = {
   updateIntern,
   deleteIntern,
   searchInterns,
+  getInternsByStatus,
+  getInternsByBranch,
+  toggleInternStatus,
 };

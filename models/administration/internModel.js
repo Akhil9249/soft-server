@@ -20,7 +20,7 @@ const internSchema = new mongoose.Schema({
 
   // Academic Details
   course: { type: mongoose.Schema.Types.ObjectId, ref: "Course" },
-  branch: { type: String, required: true },
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
   courseStartedDate: { type: Date, required: true },
   completionDate: { type: Date },
   batch: { type: String },
@@ -37,6 +37,7 @@ const internSchema = new mongoose.Schema({
   companyName: { type: String },
   jobRole: { type: String },
   resume: { type: String }, // file path or cloud URL
+  role: { type: String, enum: ["Intern", "Mentor", "Admin"], default: "Intern" },
 
   // Login & Access
   officialEmail: { type: String, required: true, unique: true, lowercase: true },
