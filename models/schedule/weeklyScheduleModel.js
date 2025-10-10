@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 
 const weeklySchedulelSchema = new mongoose.Schema({
 
-            mentor: { type: mongoose.Schema.Types.ObjectId, ref: "Mentor", required: true },
+            mentor: { type: mongoose.Schema.Types.ObjectId, ref: "Staff", required: true },
             schedule: [
                 {
                     time: { type: mongoose.Schema.Types.ObjectId, ref: "Timing" },

@@ -7,56 +7,56 @@ const createWeeklySchedule = async (req, res) => {
     // const { mentor, schedule } = req.body;
     console.log("createWeeklySchedule");
 
-    let mentor = "68cda9a22f107d096afc44d3";
-    let schedule = [
-      {
-        time: "68d2d91b9b1638f91990ddb5",
-        sub_details: [
-          {
-            days: "MWF",
-            subject: "node",
-            batch: ["68d2b4838ccf5349ee3be24b"]
-          },
-          {
-            days: "TTS",
-            subject: "react",
-            batch: ["68d2b4838ccf5349ee3be24b"]
-          }
-        ]
-      },
-      {
-        time: "68d2d9309b1638f91990ddb7",
-        sub_details: [
-          {
-            days: "MWF",
-            subject: "node",
-            batch: ["68d2b4838ccf5349ee3be24b"]
-          }
-          ,
-          {
-            days: "TTS",
-            subject: "react",
-            batch: ["68d2b4838ccf5349ee3be24b"]
-          }
-        ]
-      },
-      {
-        time: "68d2e1731efc5fbfff289866",
-        sub_details: [
-          {
-            days: "MWF",
-            subject: "node",
-            batch: ["68d2b4838ccf5349ee3be24b"]
-          },
-          ,
-          {
-            days: "TTS",
-            subject: "react",
-            batch: ["68d2b4838ccf5349ee3be24b"]
-          }
-        ]
-      },
-    ]
+    // let mentor = "68cda9a22f107d096afc44d3";
+    // let schedule = [
+    //   {
+    //     time: "68d2d91b9b1638f91990ddb5",
+    //     sub_details: [
+    //       {
+    //         days: "MWF",
+    //         subject: "node",
+    //         batch: ["68d2b4838ccf5349ee3be24b"]
+    //       },
+    //       {
+    //         days: "TTS",
+    //         subject: "react",
+    //         batch: ["68d2b4838ccf5349ee3be24b"]
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     time: "68d2d9309b1638f91990ddb7",
+    //     sub_details: [
+    //       {
+    //         days: "MWF",
+    //         subject: "node",
+    //         batch: ["68d2b4838ccf5349ee3be24b"]
+    //       }
+    //       ,
+    //       {
+    //         days: "TTS",
+    //         subject: "react",
+    //         batch: ["68d2b4838ccf5349ee3be24b"]
+    //       }
+    //     ]
+    //   },
+    //   {
+    //     time: "68d2e1731efc5fbfff289866",
+    //     sub_details: [
+    //       {
+    //         days: "MWF",
+    //         subject: "node",
+    //         batch: ["68d2b4838ccf5349ee3be24b"]
+    //       },
+    //       ,
+    //       {
+    //         days: "TTS",
+    //         subject: "react",
+    //         batch: ["68d2b4838ccf5349ee3be24b"]
+    //       }
+    //     ]
+    //   },
+    // ]
 
     console.log('Creating weekly schedule:', { mentor, schedule });
 

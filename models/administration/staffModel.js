@@ -1,20 +1,21 @@
 const mongoose = require("mongoose");
 
-const mentorSchema = new mongoose.Schema({
+const staffSchema = new mongoose.Schema({
   // Basic Details
   fullName: { type: String, required: true, trim: true },
   dateOfBirth: { type: Date, required: true },
   gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
   email: { type: String, required: true, unique: true, lowercase: true },
-  mentorPhoneNumber: { type: String, required: true },
-  mentorWhatsAppNumber: { type: String },
-  mentorPermanentAddress: { type: String },
+  staffPhoneNumber: { type: String, required: true },
+  staffWhatsAppNumber: { type: String },
+  staffPermanentAddress: { type: String },
   district: { type: String },
   state: { type: String },
   photo: { type: String }, // store photo URL or file path
 
   // Professional Details
   department: { type: String, required: true },
+  typeOfEmployee: { type: String, enum: ['Mentor', 'Carrer advisor', 'Placement coordinator', 'Front office staff'], required: true },
   branch: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
   yearsOfExperience: { type: Number, min: 0 },
   dateOfJoining: { type: Date, required: true },
@@ -22,7 +23,7 @@ const mentorSchema = new mongoose.Schema({
   resignationDate: { type: Date }, // only if inactive
   resume: { type: String }, // store resume file URL or path
   remarks: { type: String },
-  role: { type: String, enum: ["Mentor", "Admin"], default: "Mentor" },
+  role: { type: String, enum: ["Super Admin", "Admin", "Mentor", "Accountant"], default: "Mentor" },
 
   // Login & Access
   officialEmail: { type: String, required: true, unique: true, lowercase: true },
@@ -32,7 +33,7 @@ const mentorSchema = new mongoose.Schema({
 { timestamps: true }
 );
 
-// module.exports = mongoose.model("Mentor", mentorSchema);
+// module.exports = mongoose.model("Staff", staffSchema);
 module.exports = {
-  Mentor: mongoose.model("Mentor", mentorSchema),
+  Staff: mongoose.model("Staff", staffSchema),
 };

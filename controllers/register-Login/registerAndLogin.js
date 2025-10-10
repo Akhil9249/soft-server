@@ -12,7 +12,7 @@ const {
 } = require("../../utils/bcrypt.js");
 const { generateAccessToken } = require("../../utils/jwt.js");
 const internModel = require("../../models/administration/internModel.js");
-const { Mentor } = require("../../models/administration/mentorModel.js");
+const { Staff } = require("../../models/administration/staffModel.js");
 
 // ✅ Register - User Signup
 const signup = async (req, res, next) => {
@@ -44,16 +44,16 @@ const signup = async (req, res, next) => {
 
     const hashedPassword = await generatePasswordHash(password);
 
-    let  isCreate = await User.create({
-        name,
-        email,
-        phone,
-        role,
-        password: hashedPassword,
-        isActive: true
-      });
+    let isCreate = await User.create({
+      name,
+      email,
+      phone,
+      role,
+      password: hashedPassword,
+      isActive: true
+    });
 
-    
+
 
     res.status(201).json({
       success: true,
@@ -71,7 +71,8 @@ const signup = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     // Extract email, password, and userType from request body
-    const { email, password, userType = 'user' } = req.body;
+    const { email, password, role } = req.body;
+
 
     // Validate required fields
     if (!email || !password) {
@@ -86,48 +87,85 @@ const login = async (req, res, next) => {
       return next(error);
     }
 
+    // let userType = null;
+
+    // if (role === 'Mentor') {
+    //   userType = 'Mentor';
+    // } else if (role === 'Admin') {
+    //   userType = 'Admin';
+    // } else {
+    //   userType = 'Intern';
+    // }
+
+
     let user = null;
     let userData = null;
     let userTypeName = '';
 
+
     // Determine which model to query based on userType
-    switch (userType.toLowerCase()) {
-      case 'intern':
-        user = await internModel.findOne({ email, isActive: true });
+    // switch (userType.toLowerCase()) {
+
+    //   case 'admin':
+    //     user = await User.findOne({ email, isActive: true });
+    //     userTypeName = 'Admin';
+    //     if (user) {
+    //       userData = {
+    //         name: user?.name,
+    //         phone: user?.phone,
+    //         email: user?.email,
+    //         role: user?.role,
+    //       };
+    //     }
+
+    //     break;
+
+    //   case 'mentor':
+    //     user = await Mentor.findOne({ email, isActive: true });
+    //     userTypeName = 'Mentor';
+    //     if (user) {
+    //       userData = {
+    //         name: user?.fullName,
+    //         role: user?.role,
+    //         email: user?.user?.officialEmail,
+    //         phone: user?.mentorPhoneNumber,
+    //       };
+    //     }
+    //     break;
+        
+    //   default:
+        
+    //     user = await internModel.findOne({ email, isActive: true });
+    //     userTypeName = 'Intern';
+    //     if (user) {
+    //       userData = {
+    //         fullName: user?.fullName,
+    //         role: user?.role,
+    //         email: user?.email,
+    //         phone: user?.internPhoneNumber,
+    //         isActive: user?.isActive,
+    //       };
+    //     }
+    //     break;
+    // }
+
+
+    if (role === 'Intern') {
+
+          user = await internModel.findOne({ email, isActive: true });
         userTypeName = 'Intern';
         if (user) {
           userData = {
             fullName: user?.fullName,
             role: user?.role,
-            gender: user?.gender,
             email: user?.email,
-            internPhoneNumber: user?.internPhoneNumber,
-            officialEmail: user?.officialEmail,
+            phone: user?.internPhoneNumber,
             isActive: user?.isActive,
           };
         }
-        break;
-      
-      case 'mentor':
-        user = await Mentor.findOne({ email, isActive: true });
-        userTypeName = 'Mentor';
-        if (user) {
-          userData = {
-            fullName: user?.fullName,
-            role: user?.role,
-            gender: user?.gender,
-            email: user?.email,
-            mentorPhoneNumber: user?.mentorPhoneNumber,
-            officialEmail: user?.officialEmail,
-            isActive: user?.isActive,
-          };
-        }
-        break;
-      
-      case 'user':
-      default:
+    } else if (role === 'Admin') {
         user = await User.findOne({ email, isActive: true });
-        userTypeName = 'User';
+        userTypeName = 'Admin';
         if (user) {
           userData = {
             name: user?.name,
@@ -136,7 +174,17 @@ const login = async (req, res, next) => {
             role: user?.role,
           };
         }
-        break;
+    } else {
+        user = await Staff.findOne({ email, isActive: true });
+        userTypeName = 'Mentor';
+        if (user) {
+          userData = {
+            name: user?.fullName,
+            role: user?.role,
+            email: user?.user?.officialEmail,
+            phone: user?.mentorPhoneNumber,
+          };
+        }
     }
 
     if (!user) {
@@ -165,7 +213,7 @@ const login = async (req, res, next) => {
       success: true,
       accessToken,
       userData,
-      userType: userType.toLowerCase(),
+      // userType: userType.toLowerCase(),
       message: "Login successful",
     });
   } catch (error) {

@@ -3,10 +3,11 @@ const cors = require('cors')
 const morgan = require("morgan");
 
 const connectDb = require("./config/db");
+const { startAttendanceCron } = require("./cron/attendanceCron");
 
 
 const registerAndLoginRoute = require('./routes/registerAndLoginRoute');
-const mentorRoutes = require('./routes/mentorRoutes');
+const staffRoutes = require('./routes/staffRoutes');
 const internRoutes = require('./routes/internRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const courseRoutes = require('./routes/courseRoutes');
@@ -20,6 +21,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const roleRoutes = require("./routes/roleRoutes");
 const branchRoutes = require("./routes/branchRoutes");
 const taskRoutes = require("./routes/taskRoutes");
+const internsAttendanceRoutes = require("./routes/internsAttendanceRoutes");
 
 const errorHandle = require("./middlewares/errorHandle");
 // const authRoutes = require("./routes/auth");
@@ -30,6 +32,9 @@ require('dotenv').config()
 
 //connect to database
 connectDb()
+
+// Start attendance cron job
+startAttendanceCron()
 
 // Start the plan downgrade cron job
 // startCronJobs();
@@ -73,7 +78,7 @@ app.get("/", (req, res) => {
 
 app.use("/api", registerAndLoginRoute);
 
-app.use("/api/mentor", mentorRoutes);
+app.use("/api/staff", staffRoutes);
 app.use("/api/intern", internRoutes);
 app.use("/api/roles", roleRoutes);
 
@@ -91,6 +96,7 @@ app.use("/api/pages", pageRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/branches", branchRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/interns-attendance", internsAttendanceRoutes);
 
 //  Error Handling
 app.use(errorHandle);
