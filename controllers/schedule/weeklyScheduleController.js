@@ -320,7 +320,8 @@ const addBatchToSubDetails = async (req, res) => {
 // Remove Batch from Sub Details
 const removeBatchFromSubDetails = async (req, res) => {
   try {
-    const { timeIndex, subDetailIndex, batchId } = req.body;
+    const {data} = req.body;
+    const { timeIndex, subDetailIndex, batchId } = data;
     const { id } = req.params; // weekly schedule id
 
     console.log('Removing batch from sub details:', { timeIndex, subDetailIndex, batchId });

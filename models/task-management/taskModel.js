@@ -6,20 +6,16 @@ const taskSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  batch: {
+  taskType: {
     type: String,
     required: true,
-    trim: true
-  },
-  module: {
-    type: String,
-    required: true,
+    enum: ["Weekly Task", "Daily Task"],
     trim: true
   },
   assignedMentor: {
-    type: String,
-    required: true,
-    trim: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Staff",
+    required: true
   },
   startDate: {
     type: Date,
@@ -51,6 +47,42 @@ const taskSchema = new mongoose.Schema({
     enum: ["Pending", "In Progress", "Completed", "Cancelled"],
     default: "Pending"
   },
+  audience: {
+    type: String,
+    enum: ["All interns", "By batches", "By courses","Individual interns"],
+    default: "All interns"  ,
+    required: true
+  },
+  batches: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: "Batch",
+    default: []
+  },
+  courses: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: "Course",
+    default: []
+  },
+  interns: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: "Intern",
+    default: []
+  },
+  individualInterns: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: "Intern",
+    default: []
+  },
+  module: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  // batch: {
+  //   type: String,
+  //   required: true,
+  //   trim: true
+  // },
   isActive: {
     type: Boolean,
     default: true

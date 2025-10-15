@@ -8,6 +8,8 @@ const internSchema = new mongoose.Schema({
   gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
   email: { type: String, required: true, unique: true, lowercase: true },
   internPhoneNumber: { type: String, required: true },
+  // admissionNumber: { type: String, required: true },
+  admissionNumber: { type: String},
   internWhatsAppNumber: { type: String },
   guardianName: { type: String },
   fatherName: { type: String },
@@ -37,7 +39,7 @@ const internSchema = new mongoose.Schema({
   companyName: { type: String },
   jobRole: { type: String },
   resume: { type: String }, // file path or cloud URL
-  role: { type: String, enum: ["Intern", "Mentor", "Admin"], default: "Intern" },
+  role: { type: String, enum: ["Intern"], default: "Intern" },
 
   // Login & Access
   officialEmail: { type: String, required: true, unique: true, lowercase: true },

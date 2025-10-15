@@ -8,7 +8,7 @@ router.post("/", weeklyScheduleController.createWeeklySchedule);
 router.get("/", weeklyScheduleController.getWeeklySchedules);
 router.get("/:id", weeklyScheduleController.getWeeklyScheduleById);
 router.put("/:id", weeklyScheduleController.updateWeeklySchedule);
-router.delete("/:id", weeklyScheduleController.deleteWeeklySchedule);
+// router.delete("/:id", weeklyScheduleController.deleteWeeklySchedule);
 
 // Advanced operations for managing schedule structure
 router.post("/:id/time", weeklyScheduleController.addTimeToSchedule);

@@ -28,6 +28,12 @@ const internsAttendanceSchema = new mongoose.Schema({
     required: true,
     // true = Present, false = Absent
   },
+  // status: { 
+  //   type: String,
+  //   enum: ["Present", "Absent", "Leave", "Holiday","Off Day","Weekend","Sick Leave","Other"],
+  //   default: "Leave",
+  //   required: true,
+  // },
   checkInTime: { 
     type: Date, 
     required: false 

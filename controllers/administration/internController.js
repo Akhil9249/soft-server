@@ -109,7 +109,8 @@ const addIntern = async (req, res) => {
     // Populate course and branch fields for response
     const populatedIntern = await Intern.findById(newIntern._id)
       .populate('course', 'courseName')
-      .populate('branch', 'branchName');
+      .populate('branch', 'branchName')
+      .select('-password');
 
     res.status(201).json({ 
       message: "Intern created successfully", 
@@ -126,7 +127,11 @@ const getInterns = async (req, res) => {
     const interns = await Intern.find()
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .select('-password')
       .sort({ createdAt: -1 });
+
+      if(!interns) return res.status(404).json({ message: "No interns found" });
+
     res.status(200).json({ 
       message: "Interns fetched successfully", 
       data: interns 
@@ -141,7 +146,25 @@ const getInternById = async (req, res) => {
   try {
     const intern = await Intern.findById(req.params.id)
       .populate('course', 'courseName')
-      .populate('branch', 'branchName');
+      .populate('branch', 'branchName')
+      .select('-password');
+    if (!intern) return res.status(404).json({ message: "Intern not found" });
+    res.status(200).json({ 
+      message: "Intern fetched successfully", 
+      data: intern 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Error fetching intern" });
+  }
+};
+
+// -------------------- READ Single Intern Details --------------------
+const getInternDetails = async (req, res) => {
+  try {
+    const intern = await Intern.findById(req.userId)
+      .populate('course', 'courseName')
+      .populate('branch', 'branchName')
+      .select('-password -_id');
     if (!intern) return res.status(404).json({ message: "Intern not found" });
     res.status(200).json({ 
       message: "Intern fetched successfully", 
@@ -289,7 +312,8 @@ const updateIntern = async (req, res) => {
       runValidators: true,
     })
       .populate('course', 'courseName')
-      .populate('branch', 'branchName');
+      .populate('branch', 'branchName')
+      .select('-password');
 
     if (!intern) return res.status(404).json({ message: "Intern not found" });
     res.status(200).json({ 
@@ -304,7 +328,7 @@ const updateIntern = async (req, res) => {
 // -------------------- DELETE Intern --------------------
 const deleteIntern = async (req, res) => {
   try {
-    const intern = await Intern.findByIdAndDelete(req.params.id);
+    const intern = await Intern.findByIdAndDelete(req.params.id).select('-password');
     if (!intern) return res.status(404).json({ message: "Intern not found" });
     res.status(200).json({ 
       message: "Intern deleted successfully",
@@ -343,6 +367,7 @@ const searchInterns = async (req, res) => {
     })
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .select('-password')
       .limit(20); // Limit results to 20 for performance
 
     res.status(200).json({ 
@@ -379,6 +404,7 @@ const getInternsByStatus = async (req, res) => {
     const interns = await Intern.find(query)
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .select('-password')
       .sort({ createdAt: -1 });
     
     res.status(200).json({ 
@@ -398,6 +424,7 @@ const getInternsByBranch = async (req, res) => {
     const interns = await Intern.find({ branch: branchId })
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .select('-password')
       .sort({ createdAt: -1 });
     
     res.status(200).json({ 
@@ -420,7 +447,8 @@ const toggleInternStatus = async (req, res) => {
     
     const updatedIntern = await Intern.findById(intern._id)
       .populate('course', 'courseName')
-      .populate('branch', 'branchName');
+      .populate('branch', 'branchName')
+      .select('-password');
     
     res.status(200).json({ 
       message: `Intern ${updatedIntern.isActive ? 'activated' : 'deactivated'} successfully`, 
@@ -435,6 +463,7 @@ module.exports = {
   addIntern,
   getInterns,
   getInternById,
+  getInternDetails,
   updateIntern,
   deleteIntern,
   searchInterns,

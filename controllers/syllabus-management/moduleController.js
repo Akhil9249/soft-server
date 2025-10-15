@@ -115,6 +115,38 @@ const updateModule = async (req, res) => {
   }
 };
 
+// Remove topic from module
+const removeTopicFromModule = async (req, res) => {
+  try {
+    const { moduleId, topicId } = req.params;
+
+    const module = await Module.findById(moduleId);
+    if (!module) return res.status(404).json({ message: "Module not found" });
+
+    // Check if topic exists in module's topics array
+    const topicIndex = module.topics.findIndex(topic => topic.toString() === topicId);
+    if (topicIndex === -1) {
+      return res.status(404).json({ message: "Topic not found in this module" });
+    }
+
+    // Remove topic from module's topics array
+    module.topics.splice(topicIndex, 1);
+    module.totalTopics = module.topics.length;
+    await module.save();
+
+    // Remove module reference from topic
+    const Topic = require("../../models/syllabus-management/topicModel");
+    await Topic.findByIdAndUpdate(topicId, { module: null });
+
+    res.status(200).json({ 
+      message: "Topic removed from module successfully", 
+      data: module 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Delete module
 const deleteModule = async (req, res) => {
   try {
@@ -142,5 +174,6 @@ module.exports = {
   getModules,
   getModuleById,
   updateModule,
+  removeTopicFromModule,
   deleteModule,
 };

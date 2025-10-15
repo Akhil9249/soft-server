@@ -16,6 +16,7 @@ const { Staff } = require("../../models/administration/staffModel.js");
 
 // ✅ Register - User Signup
 const signup = async (req, res, next) => {
+  console.log("signup");
   try {
     const {
       name,
@@ -24,6 +25,9 @@ const signup = async (req, res, next) => {
       password,
       role
     } = req.body;
+
+    console.log("req.body", req.body);
+    
 
     // Validate input
     if (!password || !name || !phone || !email || !role) {

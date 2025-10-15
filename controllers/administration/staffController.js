@@ -161,7 +161,8 @@ const addStaff = async (req, res) => {
 
     // Populate branch field for response
     const populatedStaff = await Staff.findById(newStaff._id)
-      .populate('branch', 'branchName');
+      .populate('branch', 'branchName')
+      .select('-password');
 
     // Create weekly schedule if the staff member is a mentor
     if (newStaff.role === 'Mentor') {
@@ -188,6 +189,7 @@ const getStaff = async (req, res) => {
   try {
     const staff = await Staff.find()
       .populate('branch', 'branchName')
+      .select('-password')
       .sort({ createdAt: -1 });
     res.status(200).json({ 
       message: "Staff fetched successfully", 
@@ -202,7 +204,8 @@ const getStaff = async (req, res) => {
 const getStaffById = async (req, res) => {
   try {
     const staff = await Staff.findById(req.params.id)
-      .populate('branch', 'branchName');
+      .populate('branch', 'branchName')
+      .select('-password');
     if (!staff) {
       return res.status(404).json({ message: "Staff not found" });
     }
@@ -333,7 +336,8 @@ const updateStaff = async (req, res) => {
       new: true,
       runValidators: true,
     })
-      .populate('branch', 'branchName');
+      .populate('branch', 'branchName')
+      .select('-password');
 
     if (!staff) {
       return res.status(404).json({ message: "Staff not found" });
@@ -362,7 +366,7 @@ const updateStaff = async (req, res) => {
 // -------------------- DELETE Staff --------------------
 const deleteStaff = async (req, res) => {
   try {
-    const staff = await Staff.findByIdAndDelete(req.params.id);
+    const staff = await Staff.findByIdAndDelete(req.params.id).select('-password');
     if (!staff) {
       return res.status(404).json({ message: "Staff not found" });
     }
@@ -401,6 +405,7 @@ const searchStaff = async (req, res) => {
       ]
     })
       .populate('branch', 'branchName')
+      .select('-password')
       .limit(20); // Limit results to 20 for performance
 
     res.status(200).json({ 
@@ -423,6 +428,7 @@ const getStaffByStatus = async (req, res) => {
     
     const staff = await Staff.find({ employmentStatus: status })
       .populate('branch', 'branchName')
+      .select('-password')
       .sort({ createdAt: -1 });
     
     res.status(200).json({ 
@@ -441,6 +447,7 @@ const getStaffByBranch = async (req, res) => {
     
     const staff = await Staff.find({ branch: branchId })
       .populate('branch', 'branchName')
+      .select('-password')
       .sort({ createdAt: -1 });
     
     res.status(200).json({ 
@@ -459,6 +466,7 @@ const getStaffByDepartment = async (req, res) => {
     
     const staff = await Staff.find({ department })
       .populate('branch', 'branchName')
+      .select('-password')
       .sort({ createdAt: -1 });
     
     res.status(200).json({ 
@@ -480,7 +488,8 @@ const toggleStaffStatus = async (req, res) => {
     await staff.save();
     
     const updatedStaff = await Staff.findById(staff._id)
-      .populate('branch', 'branchName');
+      .populate('branch', 'branchName')
+      .select('-password');
     
     res.status(200).json({ 
       message: `Staff ${updatedStaff.isActive ? 'activated' : 'deactivated'} successfully`, 
@@ -502,6 +511,7 @@ const getStaffByRole = async (req, res) => {
     
     const staff = await Staff.find({ role })
       .populate('branch', 'branchName')
+      .select('-password')
       .sort({ createdAt: -1 });
     
     res.status(200).json({ 
