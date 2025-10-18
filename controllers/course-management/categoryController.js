@@ -32,8 +32,55 @@ const createCategory = async (req, res) => {
 // Get all categories
 const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find().populate("courses", "courseName duration courseType courseFee");
-    res.status(200).json({ message: "Categories retrieved successfully", data: categories });
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
+
+    // Search parameters
+    const search = req.query.search || '';
+    const branch = req.query.branch || '';
+
+    // Build query object
+    let query = {};
+
+    // Add search functionality
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { categoryName: { $regex: searchRegex } },
+        { branch: { $regex: searchRegex } }
+      ];
+    }
+
+    // Add branch filter
+    if (branch) {
+      query.branch = branch;
+    }
+
+    // Get total count for pagination
+    const totalCount = await Category.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get paginated results
+    const categories = await Category.find(query)
+      .populate("courses", "courseName duration courseType courseFee")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    res.status(200).json({ 
+      message: "Categories retrieved successfully", 
+      data: categories,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+        limit
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

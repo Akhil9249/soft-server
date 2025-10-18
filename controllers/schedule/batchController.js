@@ -33,12 +33,60 @@ const createBatch = async (req, res) => {
 // Get all batches
 const getBatches = async (req, res) => {
   try {
-    console.log('Fetching batches...');
-    const batches = await Batch.find()
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
+
+    // Search parameters
+    const search = req.query.search || '';
+    const status = req.query.status || '';
+    const branch = req.query.branch || '';
+
+    // Build query object
+    let query = {};
+
+    // Add search functionality
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { batchName: { $regex: searchRegex } }
+      ];
+    }
+
+    // Add filters
+    if (status) {
+      query.status = status;
+    }
+    if (branch) {
+      query.branch = branch;
+    }
+
+    // Get total count for pagination
+    const totalCount = await Batch.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get paginated results
+    const batches = await Batch.find(query)
       .populate("branch", "branchName")
-      .populate("interns", "fullName email course");
+      .populate("interns", "fullName email course")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
     console.log('Found batches:', batches.length);
-    res.status(200).json({ message: "Batches retrieved successfully", data: batches });
+    res.status(200).json({ 
+      message: "Batches retrieved successfully", 
+      data: batches,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+        limit
+      }
+    });
   } catch (error) {
     console.error('Error fetching batches:', error);
     res.status(500).json({ message: error.message });

@@ -187,13 +187,66 @@ const addStaff = async (req, res) => {
 // -------------------- READ All Staff --------------------
 const getStaff = async (req, res) => {
   try {
-    const staff = await Staff.find()
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
+
+    // Search parameters
+    const search = req.query.search || '';
+    const department = req.query.department || '';
+    const employmentStatus = req.query.employmentStatus || '';
+    const typeOfEmployee = req.query.typeOfEmployee || '';
+
+    // Build query object
+    let query = {};
+
+    // Add search functionality
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { fullName: { $regex: searchRegex } },
+        { email: { $regex: searchRegex } },
+        { officialEmail: { $regex: searchRegex } },
+        { staffPhoneNumber: { $regex: searchRegex } },
+        { department: { $regex: searchRegex } }
+      ];
+    }
+
+    // Add filters
+    if (department) {
+      query.department = department;
+    }
+    if (employmentStatus) {
+      query.employmentStatus = employmentStatus;
+    }
+    if (typeOfEmployee) {
+      query.typeOfEmployee = typeOfEmployee;
+    }
+
+    // Get total count for pagination
+    const totalCount = await Staff.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get paginated results
+    const staff = await Staff.find(query)
       .populate('branch', 'branchName')
       .select('-password')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
     res.status(200).json({ 
       message: "Staff fetched successfully", 
-      data: staff 
+      data: staff,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+        limit
+      }
     });
   } catch (error) {
     res.status(500).json({ message: error.message || "Error fetching staff" });

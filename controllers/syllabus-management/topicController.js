@@ -43,8 +43,54 @@ const createTopic = async (req, res) => {
 // Get all topics
 const getTopics = async (req, res) => {
   try {
-    const topics = await Topic.find().populate("module", "moduleName");
-    res.status(200).json({ message: "Topics retrieved successfully", data: topics });
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
+
+    // Search parameters
+    const search = req.query.search || '';
+    const module = req.query.module || '';
+
+    // Build query object
+    let query = {};
+
+    // Add search functionality
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { topicName: { $regex: searchRegex } }
+      ];
+    }
+
+    // Add module filter
+    if (module) {
+      query.module = module;
+    }
+
+    // Get total count for pagination
+    const totalCount = await Topic.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get paginated results
+    const topics = await Topic.find(query)
+      .populate("module", "moduleName")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    res.status(200).json({ 
+      message: "Topics retrieved successfully", 
+      data: topics,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+        limit
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

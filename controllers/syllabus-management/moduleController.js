@@ -1,4 +1,4 @@
-// controllers/moduleController.js
+  // controllers/moduleController.js
 const Module = require("../../models/syllabus-management/moduleModel");
 const Course = require("../../models/course-management/courseModel");
 
@@ -45,10 +45,55 @@ const createModule = async (req, res) => {
 // Get all modules
 const getModules = async (req, res) => {
   try {
-    const modules = await Module.find()
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
+
+    // Search parameters
+    const search = req.query.search || '';
+    const course = req.query.course || '';
+
+    // Build query object
+    let query = {};
+
+    // Add search functionality
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { moduleName: { $regex: searchRegex } }
+      ];
+    }
+
+    // Add course filter
+    if (course) {
+      query.course = course;
+    }
+
+    // Get total count for pagination
+    const totalCount = await Module.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get paginated results
+    const modules = await Module.find(query)
       .populate("course", "courseName")
-      .populate("topics", "topicName");
-    res.status(200).json({ message: "Modules retrieved successfully", data: modules });
+      .populate("topics", "topicName")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    res.status(200).json({ 
+      message: "Modules retrieved successfully", 
+      data: modules,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+        limit
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

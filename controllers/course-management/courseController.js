@@ -47,10 +47,61 @@ const createCourse = async (req, res) => {
 // Get all courses
 const getCourses = async (req, res) => {
   try {
-    const courses = await Course.find()
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
+
+    // Search parameters
+    const search = req.query.search || '';
+    const category = req.query.category || '';
+    const courseType = req.query.courseType || '';
+
+    // Build query object
+    let query = {};
+
+    // Add search functionality
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { courseName: { $regex: searchRegex } },
+        { duration: { $regex: searchRegex } },
+        { courseType: { $regex: searchRegex } }
+      ];
+    }
+
+    // Add filters
+    if (category) {
+      query.category = category;
+    }
+    if (courseType) {
+      query.courseType = courseType;
+    }
+
+    // Get total count for pagination
+    const totalCount = await Course.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get paginated results
+    const courses = await Course.find(query)
       .populate("category", "categoryName")
-      .populate("modules", "moduleName totalTopics");
-    res.status(200).json({ message: "Courses retrieved successfully", data: courses });
+      .populate("modules", "moduleName totalTopics")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    res.status(200).json({ 
+      message: "Courses retrieved successfully", 
+      data: courses,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+        limit
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

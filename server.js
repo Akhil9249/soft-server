@@ -18,9 +18,10 @@ const timingRoutes = require("./routes/timingRoutes");
 const weeklyScheduleRoutes = require("./routes/weeklyScheduleRoutes");
 const pageRoutes = require("./routes/pageRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
-const roleRoutes = require("./routes/roleRoutes");
+const privilegeRoutes = require("./routes/privilegeRoutes");
 const branchRoutes = require("./routes/branchRoutes");
 const taskRoutes = require("./routes/taskRoutes");
+const materialRoutes = require("./routes/materialRoutes");
 const internsAttendanceRoutes = require("./routes/internsAttendanceRoutes");
 
 const errorHandle = require("./middlewares/errorHandle");
@@ -80,7 +81,7 @@ app.use("/api", registerAndLoginRoute);
 
 app.use("/api/staff", staffRoutes);
 app.use("/api/intern", internRoutes);
-app.use("/api/roles", roleRoutes);
+app.use("/api/privileges", privilegeRoutes);
 
 app.use("/api/category", categoryRoutes);
 app.use("/api/course", courseRoutes);
@@ -96,6 +97,7 @@ app.use("/api/pages", pageRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/branches", branchRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/materials", materialRoutes);
 app.use("/api/interns-attendance", internsAttendanceRoutes);
 
 //  Error Handling

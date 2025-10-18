@@ -169,18 +169,68 @@ const createTask = async (req, res) => {
 // Get all tasks
 const getTasks = async (req, res) => {
   try {
-    console.log('Fetching tasks...');
-    const tasks = await Task.find({ isActive: true })
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
+
+    // Search parameters
+    const search = req.query.search || '';
+    const taskType = req.query.taskType || '';
+    const status = req.query.status || '';
+    const audience = req.query.audience || '';
+
+    // Build query object
+    let query = { isActive: true };
+
+    // Add search functionality
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { title: { $regex: searchRegex } },
+        { module: { $regex: searchRegex } },
+        { description: { $regex: searchRegex } }
+      ];
+    }
+
+    // Add filters
+    if (taskType) {
+      query.taskType = taskType;
+    }
+    if (status) {
+      query.status = status;
+    }
+    if (audience) {
+      query.audience = audience;
+    }
+
+    // Get total count for pagination
+    const totalCount = await Task.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get paginated results
+    const tasks = await Task.find(query)
       .populate('assignedMentor', 'fullName email')
       .populate('batches', 'batchName description')
       .populate('courses', 'courseName description')
       .populate('interns', 'fullName email')
       .populate('individualInterns', 'fullName email')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
     console.log('Found tasks:', tasks.length);
     res.status(200).json({
       message: "Tasks retrieved successfully",
-      data: tasks
+      data: tasks,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+        limit
+      }
     });
   } catch (error) {
     console.error('Error fetching tasks:', error);

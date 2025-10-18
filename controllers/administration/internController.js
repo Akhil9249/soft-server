@@ -124,17 +124,68 @@ const addIntern = async (req, res) => {
 // -------------------- READ All Interns --------------------
 const getInterns = async (req, res) => {
   try {
-    const interns = await Intern.find()
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 4;
+    const skip = (page - 1) * limit;
+
+    // Search parameters
+    const search = req.query.search || '';
+    const courseStatus = req.query.courseStatus || '';
+    const branch = req.query.branch || '';
+    const batch = req.query.batch || '';
+
+    // Build query object
+    let query = {};
+
+    // Add search functionality
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { fullName: { $regex: searchRegex } },
+        { email: { $regex: searchRegex } },
+        { internPhoneNumber: { $regex: searchRegex } },
+        { batch: { $regex: searchRegex } }
+      ];
+    }
+
+    // Add filters
+    if (courseStatus) {
+      query.courseStatus = courseStatus;
+    }
+    if (branch) {
+      query.branch = branch;
+    }
+    if (batch) {
+      query.batch = batch;
+    }
+
+    // Get total count for pagination
+    const totalCount = await Intern.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get paginated results
+    const interns = await Intern.find(query)
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
       .select('-password')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-      if(!interns) return res.status(404).json({ message: "No interns found" });
+    if(!interns) return res.status(404).json({ message: "No interns found" });
 
     res.status(200).json({ 
       message: "Interns fetched successfully", 
-      data: interns 
+      data: interns,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+        limit
+      }
     });
   } catch (error) {
     res.status(500).json({ message: error.message || "Error fetching interns" });
