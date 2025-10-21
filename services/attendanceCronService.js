@@ -4,7 +4,7 @@ const InternsAttendance = require("../models/attendance/internsAttendanceModel")
 const { Staff } = require("../models/administration/staffModel");
 
 // Function to create daily attendance records for all ongoing interns
-const createDailyAttendanceRecords = async () => {
+const createDailyAttendanceRecords = async (allowedInternIds = null) => {
   try {
     console.log('Starting daily attendance creation process...');
     
@@ -15,11 +15,18 @@ const createDailyAttendanceRecords = async () => {
     const day = String(today.getDate()).padStart(2, '0');
     const formattedToday = `${year}-${month}-${day}`;
     
+    // Build query for ongoing interns
+    const query = { 
+      courseStatus: "Ongoing"
+    };
+    
+    // If specific intern IDs are provided (for mentors), filter by them
+    if (allowedInternIds && allowedInternIds.length > 0) {
+      query._id = { $in: allowedInternIds };
+    }
+    
     // Get all interns with "Ongoing" course status
-    const ongoingInterns = await Intern.find({ 
-      courseStatus: "Ongoing",
-      // isActive: true 
-    });
+    const ongoingInterns = await Intern.find(query);
     console.log("ongoingInterns",ongoingInterns);
     
     console.log(`Found ${ongoingInterns.length} ongoing interns`);
@@ -137,19 +144,27 @@ const updateInternAttendance = async (internId, date, status, markedBy, remarks 
 };
 
 // Function to get attendance summary for a date range
-const getAttendanceSummary = async (startDate, endDate) => {
+const getAttendanceSummary = async (startDate, endDate, allowedInternIds = null) => {
   try {
     const start = new Date(startDate);
     const end = new Date(endDate);
     start.setHours(0, 0, 0, 0);
     end.setHours(23, 59, 59, 999);
     
+    // Build match criteria
+    const matchCriteria = {
+      date: { $gte: start, $lte: end },
+      isActive: true
+    };
+    
+    // If specific intern IDs are provided (for mentors), filter by them
+    if (allowedInternIds && allowedInternIds.length > 0) {
+      matchCriteria.intern = { $in: allowedInternIds };
+    }
+    
     const summary = await InternsAttendance.aggregate([
       {
-        $match: {
-          date: { $gte: start, $lte: end },
-          isActive: true
-        }
+        $match: matchCriteria
       },
       {
         $lookup: {

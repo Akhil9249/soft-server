@@ -2,17 +2,21 @@
 const mongoose = require("mongoose");
 
 const roleSchema = new mongoose.Schema({
-  roleName: { 
-    type: String, 
-    required: true, 
+  role: {
+    type: String,
+    required: true,
     trim: true,
-    unique: true,
-    enum: ["Super Admin", "Admin", "Mentor", "Student", "Custom"]
+    unique: true
   },
+  // role: {
+  //   type: String,
+  //   enum: ["Super Admin", "Admin", "Mentor", "Accountant", "Intern", "Career advisor", "Placement coordinator", "Front office staff"],
+  //   required: true
+  // },
   description: { 
     type: String, 
     required: true,
-    trim: true 
+    // trim: true 
   },
   permissions: {
     studentManagement: {
@@ -77,15 +81,31 @@ const roleSchema = new mongoose.Schema({
     }
   },
   isActive: { type: Boolean, default: true },
-  createdBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "User",
-    required: true 
-  },
-  updatedBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "User" 
-  }
+
+
+  // role: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: "Role",
+  //   required: true
+  // },
+
+  // privilegeName: { 
+  //   type: String, 
+  //   required: true, 
+  //   trim: true,
+  //   unique: true,
+  //   enum: ["Student Management", "Mentor Management", "Course Management", "Category Management", "Module Management", "Topic Management", "Task Management", "Weekly Schedule", "Schedule Timing", "Static Page"]
+  // },
+
+  // createdBy: { 
+  //   type: mongoose.Schema.Types.ObjectId, 
+  //   ref: "User",
+  //   required: true 
+  // },
+  // updatedBy: { 
+  //   type: mongoose.Schema.Types.ObjectId, 
+  //   ref: "User" 
+  // }
 }, { timestamps: true });
 
 // Pre-save middleware to set updatedBy

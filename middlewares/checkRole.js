@@ -56,7 +56,16 @@ const checkMultipleRoles = async (req, res, next, allowedRoles) => {
     console.log("Checking multiple roles for userId:====", req.userId);
     // console.log("Allowed roles:", allowedRoles);
     // const user = await User.findById(req.userId);
-    const user = await Staff.findById(req.userId);
+
+    // const user = await Staff.findById(req.userId);
+      // const user = await User.findById(req.userId);
+      let user = null;
+   
+      user = await Staff.findById(req.userId);
+  
+      if (!user) {
+        user = await User.findById(req.userId);
+      }
 
     
     if (!user) {

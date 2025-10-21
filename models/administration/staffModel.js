@@ -17,6 +17,7 @@ const staffSchema = new mongoose.Schema({
   department: { type: String, required: true },
   typeOfEmployee: { type: String, enum: ['Mentor', 'Carrer advisor', 'Placement coordinator', 'Front office staff'], required: true },
   branch: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
+  // assignedBatches: [{ type: mongoose.Schema.Types.ObjectId, ref: "Batch" }], // For mentors - batches they are assigned to
   yearsOfExperience: { type: Number, min: 0 },
   dateOfJoining: { type: Date, required: true },
   employmentStatus: { type: String, enum: ["Active", "Inactive"], required: true },

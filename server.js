@@ -18,7 +18,7 @@ const timingRoutes = require("./routes/timingRoutes");
 const weeklyScheduleRoutes = require("./routes/weeklyScheduleRoutes");
 const pageRoutes = require("./routes/pageRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
-const privilegeRoutes = require("./routes/privilegeRoutes");
+const roleRoutes = require("./routes/roleRoutes");
 const branchRoutes = require("./routes/branchRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const materialRoutes = require("./routes/materialRoutes");
@@ -81,7 +81,7 @@ app.use("/api", registerAndLoginRoute);
 
 app.use("/api/staff", staffRoutes);
 app.use("/api/intern", internRoutes);
-app.use("/api/privileges", privilegeRoutes);
+app.use("/api/roles", roleRoutes);
 
 app.use("/api/category", categoryRoutes);
 app.use("/api/course", courseRoutes);

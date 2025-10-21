@@ -180,13 +180,13 @@ const login = async (req, res, next) => {
         }
     } else {
         user = await Staff.findOne({ email, isActive: true });
-        userTypeName = 'Mentor';
+        userTypeName = 'Staff';
         if (user) {
           userData = {
             name: user?.fullName,
             role: user?.role,
             email: user?.user?.officialEmail,
-            phone: user?.mentorPhoneNumber,
+            phone: user?.staffPhoneNumber,
           };
         }
     }
