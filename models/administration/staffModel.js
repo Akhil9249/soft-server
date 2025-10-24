@@ -15,7 +15,6 @@ const staffSchema = new mongoose.Schema({
 
   // Professional Details
   department: { type: String, required: true },
-  typeOfEmployee: { type: String, enum: ['Mentor', 'Carrer advisor', 'Placement coordinator', 'Front office staff'], required: true },
   branch: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
   // assignedBatches: [{ type: mongoose.Schema.Types.ObjectId, ref: "Batch" }], // For mentors - batches they are assigned to
   yearsOfExperience: { type: Number, min: 0 },
@@ -24,7 +23,8 @@ const staffSchema = new mongoose.Schema({
   resignationDate: { type: Date }, // only if inactive
   resume: { type: String }, // store resume file URL or path
   remarks: { type: String },
-  role: { type: String, enum: ["Super Admin", "Admin", "Mentor", "Accountant"], default: "Mentor" },
+  // role: { type: String, enum: ["Super Admin", "Admin", "Mentor", "Accountant"], default: "Mentor" },
+  role: { type: mongoose.Schema.Types.ObjectId, ref: "Role", required: true },
 
   // Login & Access
   officialEmail: { type: String, required: true, unique: true, lowercase: true },

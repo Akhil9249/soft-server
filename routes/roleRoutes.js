@@ -6,6 +6,7 @@ const roleController = require("../controllers/administration/roleController");
 // Role CRUD operations
 router.post("/", roleController.createRole);
 router.get("/", roleController.getRoles);
+router.get("/all", roleController.getAllRoles);
 router.get("/:id", roleController.getRoleById);
 router.put("/:id", roleController.updateRole);
 router.delete("/:id", roleController.deleteRole);

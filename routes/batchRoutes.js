@@ -4,6 +4,7 @@ const router = express.Router();
 const batchController = require("../controllers/schedule/batchController");
 
 router.get("/", batchController.getBatches);
+router.get("/all", batchController.getAllBatches);
 router.get("/:id", batchController.getBatchById);
 router.post("/", batchController.createBatch);
 router.put("/:id", batchController.updateBatch);

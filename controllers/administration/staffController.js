@@ -1,4 +1,5 @@
 // controllers/staffController.js
+const mongoose = require("mongoose");
 const { Staff } = require("../../models/administration/staffModel");
 const WeeklySchedule = require("../../models/schedule/weeklyScheduleModel");
 const Timing = require("../../models/schedule/timingModel");
@@ -73,7 +74,6 @@ const addStaff = async (req, res) => {
       state,
       photo,
       department,
-      typeOfEmployee,
       branch,
       yearsOfExperience,
       dateOfJoining,
@@ -88,7 +88,7 @@ const addStaff = async (req, res) => {
 
     // Validate required fields according to schema
     if (!fullName || !dateOfBirth || !gender || !email || !staffPhoneNumber || 
-        !department || !typeOfEmployee || !dateOfJoining || !employmentStatus || !officialEmail || !password) {
+        !department || !dateOfJoining || !employmentStatus || !officialEmail || !password) {
       return res.status(400).json({ message: "All required fields must be provided" });
     }
 
@@ -107,14 +107,10 @@ const addStaff = async (req, res) => {
       return res.status(400).json({ message: "Employment status must be Active or Inactive" });
     }
 
-    // Validate typeOfEmployee enum
-    if (!['Mentor', 'Carrer advisor', 'Placement coordinator', 'Front office staff'].includes(typeOfEmployee)) {
-      return res.status(400).json({ message: "Type of employee must be Mentor, Carrer advisor, Placement coordinator, or Front office staff" });
-    }
 
-    // Validate role enum if provided
-    if (role && !["Super Admin", "Admin", "Mentor", "Accountant"].includes(role)) {
-      return res.status(400).json({ message: "Role must be Super Admin, Admin, Mentor, or Accountant" });
+    // Validate role ObjectId if provided
+    if (role && !mongoose.Types.ObjectId.isValid(role)) {
+      return res.status(400).json({ message: "Invalid role ID format" });
     }
 
     // Check duplicate email
@@ -145,7 +141,6 @@ const addStaff = async (req, res) => {
       state,
       photo,
       department,
-      typeOfEmployee,
       branch,
       yearsOfExperience: yearsOfExperience || 0,
       dateOfJoining,
@@ -153,19 +148,21 @@ const addStaff = async (req, res) => {
       resignationDate,
       resume,
       remarks,
-      role: role || "Mentor",
+      role: role,
       officialEmail,
       password: hashedPassword,
       isActive: true
     });
 
-    // Populate branch field for response
+    // Populate branch and role fields for response
     const populatedStaff = await Staff.findById(newStaff._id)
       .populate('branch', 'branchName')
+      .populate('role', 'role description')
       .select('-password');
 
     // Create weekly schedule if the staff member is a mentor
-    if (newStaff.role === 'Mentor') {
+    // Note: We'll check the role after populating it
+    if (populatedStaff.role && populatedStaff.role.role === 'Mentor') {
       try {
         await createDefaultWeeklySchedule(newStaff._id);
         console.log(`Weekly schedule created for new mentor: ${newStaff.fullName}`);
@@ -196,7 +193,6 @@ const getStaff = async (req, res) => {
     const search = req.query.search || '';
     const department = req.query.department || '';
     const employmentStatus = req.query.employmentStatus || '';
-    const typeOfEmployee = req.query.typeOfEmployee || '';
 
     // Build query object
     let query = {};
@@ -220,9 +216,6 @@ const getStaff = async (req, res) => {
     if (employmentStatus) {
       query.employmentStatus = employmentStatus;
     }
-    if (typeOfEmployee) {
-      query.typeOfEmployee = typeOfEmployee;
-    }
 
     // Get total count for pagination
     const totalCount = await Staff.countDocuments(query);
@@ -231,6 +224,7 @@ const getStaff = async (req, res) => {
     // Get paginated results
     const staff = await Staff.find(query)
       .populate('branch', 'branchName')
+      .populate('role', 'role description')
       .select('-password')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -258,6 +252,7 @@ const getStaffById = async (req, res) => {
   try {
     const staff = await Staff.findById(req.params.id)
       .populate('branch', 'branchName')
+      .populate('role', 'role description')
       .select('-password');
     if (!staff) {
       return res.status(404).json({ message: "Staff not found" });
@@ -286,7 +281,6 @@ const updateStaff = async (req, res) => {
       state,
       photo,
       department,
-      typeOfEmployee,
       branch,
       yearsOfExperience,
       dateOfJoining,
@@ -310,14 +304,10 @@ const updateStaff = async (req, res) => {
       return res.status(400).json({ message: "Employment status must be Active or Inactive" });
     }
 
-    // Validate typeOfEmployee enum if provided
-    if (typeOfEmployee && !["Mentor", "Carrer advisor", "Placement coordinator", "Front office staff"].includes(typeOfEmployee)) {
-      return res.status(400).json({ message: "Type of employee must be Full-time, Part-time, Contract, Intern, or Consultant" });
-    }
 
-    // Validate role enum if provided
-    if (role && !["Super Admin", "Admin", "Mentor", "Accountant"].includes(role)) {
-      return res.status(400).json({ message: "Role must be Super Admin, Admin, Mentor, or Accountant" });
+    // Validate role ObjectId if provided
+    if (role && !mongoose.Types.ObjectId.isValid(role)) {
+      return res.status(400).json({ message: "Invalid role ID format" });
     }
 
     // Check for duplicate email if email is being updated
@@ -360,7 +350,6 @@ const updateStaff = async (req, res) => {
       state,
       photo,
       department,
-      typeOfEmployee,
       branch,
       yearsOfExperience,
       dateOfJoining,
@@ -390,6 +379,7 @@ const updateStaff = async (req, res) => {
       runValidators: true,
     })
       .populate('branch', 'branchName')
+      .populate('role', 'role description')
       .select('-password');
 
     if (!staff) {
@@ -397,7 +387,7 @@ const updateStaff = async (req, res) => {
     }
 
     // Create weekly schedule if the staff member is updated to be a mentor and doesn't have one
-    if (staff.role === 'Mentor') {
+    if (staff.role && staff.role.role === 'Mentor') {
       try {
         await createDefaultWeeklySchedule(staff._id);
         console.log(`Weekly schedule created/verified for mentor: ${staff.fullName}`);
@@ -458,6 +448,7 @@ const searchStaff = async (req, res) => {
       ]
     })
       .populate('branch', 'branchName')
+      .populate('role', 'role description')
       .select('-password')
       .limit(20); // Limit results to 20 for performance
 
@@ -481,6 +472,7 @@ const getStaffByStatus = async (req, res) => {
     
     const staff = await Staff.find({ employmentStatus: status })
       .populate('branch', 'branchName')
+      .populate('role', 'role description')
       .select('-password')
       .sort({ createdAt: -1 });
     
@@ -500,6 +492,7 @@ const getStaffByBranch = async (req, res) => {
     
     const staff = await Staff.find({ branch: branchId })
       .populate('branch', 'branchName')
+      .populate('role', 'role description')
       .select('-password')
       .sort({ createdAt: -1 });
     
@@ -519,6 +512,7 @@ const getStaffByDepartment = async (req, res) => {
     
     const staff = await Staff.find({ department })
       .populate('branch', 'branchName')
+      .populate('role', 'role description')
       .select('-password')
       .sort({ createdAt: -1 });
     
@@ -542,6 +536,7 @@ const toggleStaffStatus = async (req, res) => {
     
     const updatedStaff = await Staff.findById(staff._id)
       .populate('branch', 'branchName')
+      .populate('role', 'role description')
       .select('-password');
     
     res.status(200).json({ 
@@ -556,19 +551,20 @@ const toggleStaffStatus = async (req, res) => {
 // -------------------- GET STAFF BY ROLE --------------------
 const getStaffByRole = async (req, res) => {
   try {
-    const { role } = req.params; // 'Mentor' or 'Admin'
+    const { roleId } = req.params; // Role ObjectId
     
-    if (!["Super Admin", "Admin", "Mentor", "Accountant"].includes(role)) {
-      return res.status(400).json({ message: "Role must be Super Admin, Admin, Mentor, or Accountant" });
+    if (!mongoose.Types.ObjectId.isValid(roleId)) {
+      return res.status(400).json({ message: "Invalid role ID format" });
     }
     
-    const staff = await Staff.find({ role })
+    const staff = await Staff.find({ role: roleId })
       .populate('branch', 'branchName')
+      .populate('role', 'role description')
       .select('-password')
       .sort({ createdAt: -1 });
     
     res.status(200).json({ 
-      message: `Staff with role '${role}' fetched successfully`, 
+      message: `Staff with role ID '${roleId}' fetched successfully`, 
       data: staff 
     });
   } catch (error) {

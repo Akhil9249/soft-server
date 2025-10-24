@@ -1,4 +1,5 @@
 const { User } = require("../../models/userModel.js");
+const Role = require("../../models/administration/roleModel.js");
 const razorpay = require("../../utils/razorpay.js");
 require('dotenv').config()
 const { OAuth2Client } = require('google-auth-library');
@@ -34,7 +35,13 @@ const signup = async (req, res, next) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-
+    // Find the role by name
+    const roleDoc = await Role.findOne({ role: role });
+    if (!roleDoc) {
+      return res.status(400).json({ 
+        message: "Invalid role. Role not found in system." 
+      });
+    }
 
     const isExist = await User.findOne({
       $or: [{ email }, { phone }]
@@ -52,12 +59,10 @@ const signup = async (req, res, next) => {
       name,
       email,
       phone,
-      role,
+      role: roleDoc._id, // Use role ObjectId instead of string
       password: hashedPassword,
       isActive: true
     });
-
-
 
     res.status(201).json({
       success: true,
@@ -168,24 +173,24 @@ const login = async (req, res, next) => {
           };
         }
     } else if (role === 'Admin') {
-        user = await User.findOne({ email, isActive: true });
+        user = await User.findOne({ email, isActive: true }).populate('role', 'role');
         userTypeName = 'Admin';
         if (user) {
           userData = {
             name: user?.name,
             phone: user?.phone,
             email: user?.email,
-            role: user?.role,
+            role: user?.role?.role, // Get role name from populated role
           };
         }
     } else {
-        user = await Staff.findOne({ email, isActive: true });
+        user = await Staff.findOne({ email, isActive: true }).populate('role', 'role');
         userTypeName = 'Staff';
         if (user) {
           userData = {
             name: user?.fullName,
-            role: user?.role,
-            email: user?.user?.officialEmail,
+            role: user?.role?.role, // Get role name from populated role
+            email: user?.officialEmail,
             phone: user?.staffPhoneNumber,
           };
         }

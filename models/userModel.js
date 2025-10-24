@@ -42,8 +42,9 @@ const userSchema = new mongoose.Schema(
     },
     isActive: { type: Boolean, default: true },
     role: {
-      type: String,
-      enum: ["Super Admin", "Admin", "Mentor", "Accountant", "Intern"],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Role",
+      // enum: ["super admin", "admin"],
       // default: "user",
     }
   },

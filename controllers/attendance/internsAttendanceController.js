@@ -5,6 +5,7 @@ const { User } = require("../../models/userModel");
 const Intern = require("../../models/administration/internModel");
 const Batch = require("../../models/schedule/batchModel");
 const WeeklySchedule = require("../../models/schedule/weeklyScheduleModel");
+const Role = require("../../models/administration/roleModel");
 const { createDailyAttendanceRecords, updateInternAttendance, getAttendanceSummary } = require("../../services/attendanceCronService");
 
 // -------------------- HELPER FUNCTION: Get Mentor's Interns from WeeklySchedule --------------------
@@ -55,21 +56,49 @@ const getMentorInternsFromWeeklySchedule = async (mentorId) => {
   }
 };
 
+// -------------------- HELPER FUNCTION: Get User Role Name --------------------
+const getUserRoleName = async (userId) => {
+  try {
+    // Check if user is in Staff collection
+    let user = await Staff.findById(userId).populate('role', 'role');
+    if (user && user.role) {
+      return user.role.role;
+    }
+    
+    // Check if user is in User collection (for super admin/admin) - now with role reference
+    user = await User.findById(userId).populate('role', 'role');
+    if (user && user.role) {
+      return user.role.role;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error getting user role:", error);
+    return null;
+  }
+};
+
 // -------------------- HELPER FUNCTION: Check Mentor Permissions --------------------
 const checkMentorPermissions = async (mentorId, internId) => {
   try {
     // Get mentor details
     let mentor = null
-    mentor = await Staff.findById(mentorId);
+    mentor = await Staff.findById(mentorId).populate('role', 'role');
     if (!mentor) {
-      mentor = await User.findById(mentorId);
+      mentor = await User.findById(mentorId).populate('role', 'role');
     }
     if (!mentor) {
       return { allowed: false, reason: "Mentor not found" };
     }
 
+    // Get role name for comparison
+    let roleName = null;
+    if (mentor.role && typeof mentor.role === 'object') {
+      roleName = mentor.role.role; // For both Staff and User with populated role
+    }
+
     // If mentor is Admin or Super Admin, allow access to all interns
-    if (mentor.role === 'Admin' || mentor.role === 'Super Admin') {
+    if (roleName === 'admin' || roleName === 'super admin') {
       return { allowed: true };
     }
 
@@ -206,8 +235,8 @@ const getInternsAttendance = async (req, res) => {
     if (status) filter.status = status;
 
     // Check user role and apply appropriate filtering
-    const user = await Staff.findById(userId);
-    if (user && user.role === 'Mentor') {
+    const userRole = await getUserRoleName(userId);
+    if (userRole === 'mentor') {
       // For mentors, get all interns from mentor's weekly schedule
       const mentorInterns = await getMentorInternsFromWeeklySchedule(userId);
       const allowedInternIds = mentorInterns.interns.map(intern => intern._id);
@@ -313,20 +342,15 @@ const updateInternsAttendance = async (req, res) => {
     }
 
     // Check user role and permissions
-    let user = null;
-    user = await Staff.findById(userId);
-    if (!user) {
-      user = await User.findById(userId);
-    }
-    
-    if (!user) {
+    const userRole = await getUserRoleName(userId);
+    if (!userRole) {
       return res.status(404).json({ message: "User not found" });
     }
     
     // Super Admin and Admin can update any attendance record
-    if (user.role === 'Super Admin' || user.role === 'Admin') {
+    if (userRole === 'super admin' || userRole === 'admin') {
       // Allow update for all interns
-    } else if (user.role === 'Mentor') {
+    } else if (userRole === 'mentor') {
       // For mentors, check if they have permission for this intern
       const permissionCheck = await checkMentorPermissions(userId, existingAttendance.intern);
       if (!permissionCheck.allowed) {
@@ -380,20 +404,15 @@ const deleteInternsAttendance = async (req, res) => {
     }
 
     // Check user role and permissions
-    let user = null;
-    user = await Staff.findById(userId);
-    if (!user) {
-      user = await User.findById(userId);
-    }
-    
-    if (!user) {
+    const userRole = await getUserRoleName(userId);
+    if (!userRole) {
       return res.status(404).json({ message: "User not found" });
     }
     
     // Super Admin and Admin can delete any attendance record
-    if (user.role === 'Super Admin' || user.role === 'Admin') {
+    if (userRole === 'super admin' || userRole === 'admin') {
       // Allow delete for all interns
-    } else if (user.role === 'Mentor') {
+    } else if (userRole === 'mentor') {
       // For mentors, check if they have permission for this intern
       const permissionCheck = await checkMentorPermissions(userId, existingAttendance.intern);
       if (!permissionCheck.allowed) {
@@ -458,8 +477,8 @@ const getInternsAttendanceByDateRange = async (req, res) => {
     if (intern) filter.intern = intern;
 
     // Check user role and apply appropriate filtering
-    const user = await Staff.findById(userId);
-    if (user && user.role === 'Mentor') {
+    const userRole = await getUserRoleName(userId);
+    if (userRole === 'mentor') {
       // For mentors, get all interns from mentor's weekly schedule
       const mentorInterns = await getMentorInternsFromWeeklySchedule(userId);
       const allowedInternIds = mentorInterns.interns.map(intern => intern._id);
@@ -519,8 +538,8 @@ const getInternsAttendanceSummary = async (req, res) => {
     }
 
     // Check user role and apply appropriate filtering
-    const user = await Staff.findById(userId);
-    if (user && user.role === 'Mentor') {
+    const userRole = await getUserRoleName(userId);
+    if (userRole === 'mentor') {
       // For mentors, get all interns from mentor's weekly schedule
       const mentorInterns = await getMentorInternsFromWeeklySchedule(userId);
       const allowedInternIds = mentorInterns.interns.map(intern => intern._id);
@@ -567,26 +586,21 @@ const getInternsAttendanceSummary = async (req, res) => {
 const createDailyAttendanceForAllInterns = async (req, res) => {
   try {
     const userId = req.userId;
-    let user = null;
-    user = await Staff.findById(userId)
-    if (!user) {
-      user = await User.findById(userId)
-    }
-    // const user = await Staff.findById(userId);
-    
-    if (!user) {
+    const userRole = await getUserRoleName(userId);
+    console.log("userRole====================", userRole);
+    if (!userRole) {
       return res.status(404).json({ 
         message: "User not found" 
       });
     }
     
     // Super Admin and Admin can create attendance for all interns
-    if (user.role === 'Super Admin' || user.role === 'Admin') {
+    if (userRole === 'super admin' || userRole === 'admin') {
       await createDailyAttendanceRecords();
       res.status(200).json({ 
         message: "Daily attendance records created successfully for all ongoing interns" 
       });
-    } else if (user.role === 'Mentor') {
+    } else if (userRole === 'mentor') {
       // For mentors, create attendance only for their weekly schedule interns
       const mentorInterns = await getMentorInternsFromWeeklySchedule(userId);
       const allowedInternIds = mentorInterns.interns.map(intern => intern._id);
@@ -685,10 +699,10 @@ const getAttendanceSummaryReport = async (req, res) => {
     const formattedEndDate = `${endYear}-${endMonth}-${endDay}`;
     
     // Check user role and apply appropriate filtering
-    const user = await Staff.findById(userId);
+    const userRole = await getUserRoleName(userId);
     let allowedInternIds = null;
     
-    if (user && user.role === 'Mentor') {
+    if (userRole === 'mentor') {
       // For mentors, get all interns from mentor's weekly schedule
       const mentorInterns = await getMentorInternsFromWeeklySchedule(userId);
       allowedInternIds = mentorInterns.interns.map(intern => intern._id);
@@ -725,15 +739,15 @@ const getMentorInterns = async (req, res) => {
     const { mentorId } = req.params;
 
     // Check if user is requesting their own interns or is admin
-    const user = await Staff.findById(userId);
-    if (!user) {
+    const userRole = await getUserRoleName(userId);
+    if (!userRole) {
       return res.status(404).json({ message: "User not found" });
     }
 
     // Allow mentors to get their own interns, or admins to get any mentor's interns
     const targetMentorId = mentorId || userId;
     
-    if (user.role !== 'Admin' && user.role !== 'Super Admin' && targetMentorId !== userId) {
+    if (userRole !== 'admin' && userRole !== 'super admin' && targetMentorId !== userId) {
       return res.status(403).json({ 
         message: "Access denied: You can only view your own assigned interns" 
       });
@@ -743,7 +757,7 @@ const getMentorInterns = async (req, res) => {
     const result = await getMentorInternsFromWeeklySchedule(targetMentorId);
     
     // Get mentor details
-    const mentor = await Staff.findById(targetMentorId).select('fullName email role');
+    const mentor = await Staff.findById(targetMentorId).select('fullName email role').populate('role', 'role');
     
     res.status(200).json({
       message: "Mentor's interns retrieved successfully",
@@ -758,6 +772,124 @@ const getMentorInterns = async (req, res) => {
     res.status(500).json({ 
       message: error.message || "Error retrieving mentor's interns" 
     });
+  }
+};
+
+// -------------------- HELPER FUNCTION: Get Interns by WeeklySchedule Filters --------------------
+const getInternsByWeeklyScheduleFilters = async (filters = {}) => {
+  try {
+    const { timingId, days, courseId, branchId, mentorId } = filters;
+    
+    // Build the base query for WeeklySchedule
+    let weeklyScheduleQuery = {};
+    
+    // If mentorId is provided, filter by mentor
+    if (mentorId) {
+      weeklyScheduleQuery.mentor = mentorId;
+    }
+    
+    // If timingId is provided, filter by timing
+    if (timingId) {
+      weeklyScheduleQuery['schedule.time'] = timingId;
+    }
+    
+    // If days is provided, filter by days
+    if (days) {
+      weeklyScheduleQuery['schedule.sub_details.days'] = days;
+    }
+
+    console.log("WeeklySchedule query:", weeklyScheduleQuery);
+
+    // Get weekly schedules with the specified filters
+    const weeklySchedules = await WeeklySchedule.find(weeklyScheduleQuery)
+      .populate({
+        path: 'schedule.sub_details.batch',
+        populate: [
+          {
+            path: 'interns',
+            model: 'Intern',
+            populate: [
+              {
+                path: 'course',
+                model: 'Course'
+              },
+              {
+                path: 'branch',
+                model: 'Branch'
+              }
+            ]
+          }
+        ]
+      })
+      .populate('schedule.time', 'timeSlot');
+
+    if (!weeklySchedules || weeklySchedules.length === 0) {
+      return { 
+        interns: [], 
+        message: "No weekly schedule found matching the specified criteria" 
+      };
+    }
+
+    // Extract all unique interns from all batches in the schedules
+    const allInterns = [];
+    const internIds = new Set(); // To avoid duplicates
+
+    weeklySchedules.forEach(weeklySchedule => {
+      weeklySchedule.schedule.forEach(timeSlot => {
+        timeSlot.sub_details.forEach(subDetail => {
+          if (subDetail.batch && subDetail.batch.length > 0) {
+            subDetail.batch.forEach(batch => {
+              if (batch.interns && batch.interns.length > 0) {
+                batch.interns.forEach(intern => {
+                  // Apply additional filters if provided
+                  let shouldInclude = true;
+                  
+                  // Filter by course if courseId is provided
+                  if (courseId && intern.course && intern.course._id.toString() !== courseId) {
+                    shouldInclude = false;
+                  }
+                  
+                  // Filter by branch if branchId is provided
+                  if (branchId && intern.branch && intern.branch._id.toString() !== branchId) {
+                    shouldInclude = false;
+                  }
+                  
+                  // Filter by days if days is provided (check if this subDetail matches the days)
+                  if (days && subDetail.days !== days) {
+                    shouldInclude = false;
+                  }
+                  
+                  // Filter by timing if timingId is provided (check if this timeSlot matches the timing)
+                  if (timingId && timeSlot.time && timeSlot.time._id.toString() !== timingId) {
+                    shouldInclude = false;
+                  }
+                  
+                  if (shouldInclude && !internIds.has(intern._id.toString())) {
+                    internIds.add(intern._id.toString());
+                    allInterns.push(intern);
+                  }
+                });
+              }
+            });
+          }
+        });
+      });
+    });
+
+    return { 
+      interns: allInterns, 
+      message: `Found ${allInterns.length} interns matching the specified criteria`,
+      appliedFilters: {
+        timingId,
+        days,
+        courseId,
+        branchId,
+        mentorId
+      }
+    };
+  } catch (error) {
+    console.error("Error getting interns by weekly schedule filters:", error);
+    return { interns: [], message: "Error retrieving interns with the specified filters" };
   }
 };
 
@@ -791,8 +923,8 @@ const getInternsByAttendanceDate = async (req, res) => {
     };
 
     // Check user role and apply appropriate filtering
-    const user = await Staff.findById(userId);
-    if (user && user.role === 'Mentor') {
+    const userRole = await getUserRoleName(userId);
+    if (userRole === 'mentor') {
       // For mentors, get all interns from mentor's weekly schedule
       const mentorInterns = await getMentorInternsFromWeeklySchedule(userId);
       const allowedInternIds = mentorInterns.interns.map(intern => intern._id);
@@ -809,11 +941,82 @@ const getInternsByAttendanceDate = async (req, res) => {
     }
     // For Super Admin and Admin, no additional filtering is applied - they can see all interns
     
+    // Apply Course, Branch, and Batch filtering using WeeklySchedule
+    let allowedInternIds = null;
+    
+    // If any of the filters (courseId, branchId, days, timingId) are provided, use WeeklySchedule filtering
+    if (courseId || branchId || days || timingId) {
+      console.log("Applying WeeklySchedule-based filtering");
+      
+      // Build WeeklySchedule query
+      let weeklyScheduleQuery = {};
+      
+      // If timingId is provided, filter by timing
+      if (timingId) {
+        weeklyScheduleQuery['schedule.time'] = timingId;
+      }
+      
+      // If days is provided, filter by days
+      if (days) {
+        weeklyScheduleQuery['schedule.sub_details.days'] = days;
+      }
+      
+      // If mentor filtering is already applied, we need to intersect with WeeklySchedule results
+      if (query.intern && query.intern.$in) {
+        // Get WeeklySchedule-based intern IDs
+        const weeklyScheduleResult = await getInternsByWeeklyScheduleFilters({
+          timingId,
+          days,
+          courseId,
+          branchId,
+          mentorId: userRole === 'mentor' ? userId : null
+        });
+        
+        const weeklyScheduleInternIds = weeklyScheduleResult.interns.map(intern => intern._id.toString());
+        const currentAllowedIds = query.intern.$in.map(id => id.toString());
+        
+        // Intersect the two sets
+        const intersection = currentAllowedIds.filter(id => 
+          weeklyScheduleInternIds.includes(id)
+        );
+        
+        if (intersection.length === 0) {
+          return res.status(200).json({
+            message: "No interns found matching the specified criteria",
+            data: [],
+            totalCount: 0
+          });
+        }
+        
+        query.intern = { $in: intersection };
+      } else {
+        // No mentor filtering, use WeeklySchedule filtering directly
+        const weeklyScheduleResult = await getInternsByWeeklyScheduleFilters({
+          timingId,
+          days,
+          courseId,
+          branchId,
+          mentorId: userRole === 'mentor' ? userId : null
+        });
+        
+        if (weeklyScheduleResult.interns.length === 0) {
+          return res.status(200).json({
+            message: weeklyScheduleResult.message,
+            data: [],
+            totalCount: 0
+          });
+        }
+        
+        const weeklyScheduleInternIds = weeklyScheduleResult.interns.map(intern => intern._id);
+        query.intern = { $in: weeklyScheduleInternIds };
+      }
+    }
+
     // Get attendance records for the specified date
     let attendanceRecords = await InternsAttendance.find(query)
     .populate({
       path: 'intern',
-      select: 'fullName email role courseStatus branch course',
+      select: 'fullName email role courseStatus branch course batch',
       populate: [
         {
           path: 'branch',
@@ -831,133 +1034,17 @@ const getInternsByAttendanceDate = async (req, res) => {
     })
     .sort({ createdAt: -1 });
 
-    // Apply filters
+    // Apply additional client-side filters if needed
     let filteredRecords = attendanceRecords;
 
-    // Filter by branch if branchId is provided
-    if (branchId) {
+    // Additional filtering for batch if batchId is provided (not in WeeklySchedule)
+    if (req.query.batchId) {
       filteredRecords = filteredRecords.filter(record => 
-        record.intern.branch && record.intern.branch._id.toString() === branchId
+        record.intern.batch && record.intern.batch.toString() === req.query.batchId
       );
-      console.log(`Filtered ${filteredRecords.length} records for branch ${branchId}`);
+      console.log(`Filtered ${filteredRecords.length} records for batch ${req.query.batchId}`);
     }
 
-    // Filter by course if courseId is provided
-    if (courseId) {
-      filteredRecords = filteredRecords.filter(record => 
-        record.intern.course && 
-        record.intern.course._id.toString() === courseId
-      );
-      console.log(`Filtered ${filteredRecords.length} records for course ${courseId}`);
-    }
-
-    // Filter by days (MWF/TTS) if days is provided
-    if (days) {
-      console.log(`Filtering by days: ${days}`);
-      
-      // Get all weekly schedules that have the specified days
-      const weeklySchedules = await WeeklySchedule.find({
-        'schedule.sub_details.days': days
-      }).populate({
-        path: 'schedule.sub_details.batch',
-        populate: {
-          path: 'interns',
-          model: 'Intern'
-        }
-      });
-
-      if (weeklySchedules && weeklySchedules.length > 0) {
-        // Extract all unique interns from all batches in the schedules with the specified days
-        const daysInternIds = new Set();
-        
-        weeklySchedules.forEach(weeklySchedule => {
-          weeklySchedule.schedule.forEach(timeSlot => {
-            timeSlot.sub_details.forEach(subDetail => {
-              // Check if this subDetail has the specified days
-              if (subDetail.days === days && subDetail.batch && subDetail.batch.length > 0) {
-                subDetail.batch.forEach(batch => {
-                  if (batch.interns && batch.interns.length > 0) {
-                    batch.interns.forEach(intern => {
-                      daysInternIds.add(intern._id.toString());
-                    });
-                  }
-                });
-              }
-            });
-          });
-        });
-
-        // Filter attendance records by days-based intern IDs
-        if (daysInternIds.size > 0) {
-          const daysIdsArray = Array.from(daysInternIds);
-          filteredRecords = filteredRecords.filter(record => 
-            daysIdsArray.includes(record.intern._id.toString())
-          );
-          console.log(`Filtered ${filteredRecords.length} records for days ${days}`);
-        } else {
-          console.log(`No interns found for days ${days}`);
-          filteredRecords = []; // No records match the days filter
-        }
-      } else {
-        console.log(`No weekly schedule found for days ${days}`);
-        filteredRecords = []; // No records match the days filter
-      }
-    }
-
-    // Filter by timing if timingId is provided
-    if (timingId) {
-      console.log(`Filtering by timing: ${timingId}`);
-      
-      // Get all weekly schedules that have the specified timing
-      const weeklySchedules = await WeeklySchedule.find({
-        'schedule.time': timingId
-      }).populate({
-        path: 'schedule.sub_details.batch',
-        populate: {
-          path: 'interns',
-          model: 'Intern'
-        }
-      });
-
-      if (weeklySchedules && weeklySchedules.length > 0) {
-        // Extract all unique interns from all batches in the schedules with the specified timing
-        const timingInternIds = new Set();
-        
-        weeklySchedules.forEach(weeklySchedule => {
-          weeklySchedule.schedule.forEach(timeSlot => {
-            // Check if this timeSlot has the specified timing
-            if (timeSlot.time && timeSlot.time.toString() === timingId) {
-              timeSlot.sub_details.forEach(subDetail => {
-                if (subDetail.batch && subDetail.batch.length > 0) {
-                  subDetail.batch.forEach(batch => {
-                    if (batch.interns && batch.interns.length > 0) {
-                      batch.interns.forEach(intern => {
-                        timingInternIds.add(intern._id.toString());
-                      });
-                    }
-                  });
-                }
-              });
-            }
-          });
-        });
-
-        // Filter attendance records by timing-based intern IDs
-        if (timingInternIds.size > 0) {
-          const timingIdsArray = Array.from(timingInternIds);
-          filteredRecords = filteredRecords.filter(record => 
-            timingIdsArray.includes(record.intern._id.toString())
-          );
-          console.log(`Filtered ${filteredRecords.length} records for timing ${timingId}`);
-        } else {
-          console.log(`No interns found for timing ${timingId}`);
-          filteredRecords = []; // No records match the timing filter
-        }
-      } else {
-        console.log(`No weekly schedule found for timing ${timingId}`);
-        filteredRecords = []; // No records match the timing filter
-      }
-    }
 
     console.log("filteredRecords===", filteredRecords.length);
 

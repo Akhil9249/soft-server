@@ -2,6 +2,7 @@
 const Intern = require("../models/administration/internModel");
 const InternsAttendance = require("../models/attendance/internsAttendanceModel");
 const { Staff } = require("../models/administration/staffModel");
+const Role = require("../models/administration/roleModel");
 
 // Function to create daily attendance records for all ongoing interns
 const createDailyAttendanceRecords = async (allowedInternIds = null) => {
@@ -37,11 +38,17 @@ const createDailyAttendanceRecords = async (allowedInternIds = null) => {
     }
     
     // Get a default admin user to mark attendance (you can modify this logic)
+    // First, find the Mentor role
+    const mentorRole = await Role.findOne({ role: "mentor" });
+    if (!mentorRole) {
+      console.error('Mentor role not found');
+      return;
+    }
+    
     const defaultAdmin = await Staff.findOne({ 
-      // role: "Admin", 
-      role: "Mentor", 
+      role: mentorRole._id, 
       isActive: true 
-    });
+    }).populate('role', 'role');
     
     if (!defaultAdmin) {
       console.error('No admin user found to mark attendance');

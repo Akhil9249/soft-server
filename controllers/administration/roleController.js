@@ -254,9 +254,29 @@ const getRolePermissions = async (req, res) => {
   }
 };
 
+// Get all roles (without pagination) - excluding Super Admin
+const getAllRoles = async (req, res) => {
+  try {
+    // Get all active roles excluding Super Admin
+    const roles = await Role.find({
+      isActive: true,
+      role: { $ne: "super admin" } // Exclude Super Admin from results
+    })
+    .sort({ createdAt: -1 });
+
+    res.status(200).json({ 
+      message: "All roles retrieved successfully", 
+      data: roles
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createRole,
   getRoles,
+  getAllRoles,
   getRoleById,
   updateRole,
   deleteRole,

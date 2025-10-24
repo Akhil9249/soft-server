@@ -28,6 +28,7 @@ const addIntern = async (req, res) => {
       completionDate,
       batch,
       courseStatus,
+      careerAdvisor,
       remarks,
       internSyllabusStatus,
       placementStatus,
@@ -92,6 +93,7 @@ const addIntern = async (req, res) => {
       completionDate,
       batch,
       courseStatus: courseStatus || "Ongoing",
+      careerAdvisor,
       remarks,
       internSyllabusStatus: internSyllabusStatus || "Not Started",
       placementStatus: placementStatus || "Not Placed",
@@ -110,6 +112,7 @@ const addIntern = async (req, res) => {
     const populatedIntern = await Intern.findById(newIntern._id)
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .populate('careerAdvisor', 'fullName email')
       .select('-password');
 
     res.status(201).json({ 
@@ -129,9 +132,12 @@ const getInterns = async (req, res) => {
     const limit = parseInt(req.query.limit) || 4;
     const skip = (page - 1) * limit;
 
+    console.log("req.query", req.query);
+
     // Search parameters
     const search = req.query.search || '';
     const courseStatus = req.query.courseStatus || '';
+    const course = req.query.course || '';
     const branch = req.query.branch || '';
     const batch = req.query.batch || '';
 
@@ -153,6 +159,9 @@ const getInterns = async (req, res) => {
     if (courseStatus) {
       query.courseStatus = courseStatus;
     }
+    if (course) {
+      query.course = course;
+    }
     if (branch) {
       query.branch = branch;
     }
@@ -168,10 +177,13 @@ const getInterns = async (req, res) => {
     const interns = await Intern.find(query)
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .populate('careerAdvisor', 'fullName email')
       .select('-password')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
+
+    console.log("interns", interns.length);
 
     if(!interns) return res.status(404).json({ message: "No interns found" });
 
@@ -198,6 +210,7 @@ const getInternById = async (req, res) => {
     const intern = await Intern.findById(req.params.id)
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .populate('careerAdvisor', 'fullName email')
       .select('-password');
     if (!intern) return res.status(404).json({ message: "Intern not found" });
     res.status(200).json({ 
@@ -215,6 +228,7 @@ const getInternDetails = async (req, res) => {
     const intern = await Intern.findById(req.userId)
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .populate('careerAdvisor', 'fullName email')
       .select('-password -_id');
     if (!intern) return res.status(404).json({ message: "Intern not found" });
     res.status(200).json({ 
@@ -250,6 +264,7 @@ const updateIntern = async (req, res) => {
       completionDate,
       batch,
       courseStatus,
+      careerAdvisor,
       remarks,
       internSyllabusStatus,
       placementStatus,
@@ -280,8 +295,8 @@ const updateIntern = async (req, res) => {
     }
 
     // Validate internSyllabusStatus enum if provided
-    if (internSyllabusStatus && !["Not Started", "In Progress", "Completed"].includes(internSyllabusStatus)) {
-      return res.status(400).json({ message: "Syllabus status must be Not Started, In Progress, or Completed" });
+    if (internSyllabusStatus && !["Not Started", "Learning", "mini Project", "Main Project"].includes(internSyllabusStatus)) {
+      return res.status(400).json({ message: "Syllabus status must be Not Started, Learning, mini Project, or Main Project" });
     }
 
     // Validate placementStatus enum if provided
@@ -333,6 +348,7 @@ const updateIntern = async (req, res) => {
       completionDate,
       batch,
       courseStatus,
+      careerAdvisor,
       remarks,
       internSyllabusStatus,
       placementStatus,
@@ -364,6 +380,7 @@ const updateIntern = async (req, res) => {
     })
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .populate('careerAdvisor', 'fullName email')
       .select('-password');
 
     if (!intern) return res.status(404).json({ message: "Intern not found" });
@@ -418,6 +435,7 @@ const searchInterns = async (req, res) => {
     })
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .populate('careerAdvisor', 'fullName email')
       .select('-password')
       .limit(20); // Limit results to 20 for performance
 
@@ -455,6 +473,7 @@ const getInternsByStatus = async (req, res) => {
     const interns = await Intern.find(query)
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .populate('careerAdvisor', 'fullName email')
       .select('-password')
       .sort({ createdAt: -1 });
     
@@ -475,6 +494,7 @@ const getInternsByBranch = async (req, res) => {
     const interns = await Intern.find({ branch: branchId })
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .populate('careerAdvisor', 'fullName email')
       .select('-password')
       .sort({ createdAt: -1 });
     
@@ -499,6 +519,7 @@ const toggleInternStatus = async (req, res) => {
     const updatedIntern = await Intern.findById(intern._id)
       .populate('course', 'courseName')
       .populate('branch', 'branchName')
+      .populate('careerAdvisor', 'fullName email')
       .select('-password');
     
     res.status(200).json({ 

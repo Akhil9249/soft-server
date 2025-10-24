@@ -26,14 +26,15 @@ const internSchema = new mongoose.Schema({
   courseStartedDate: { type: Date, required: true },
   completionDate: { type: Date },
   batch: { type: String },
-  courseStatus: { type: String, enum: ["Ongoing", "Completed", "Dropped"], default: "Ongoing" },
+  courseStatus: { type: String, enum: ["Active", "Inactive", "Dropped", "Completed", "Long leave"], default: "Active" },
+  careerAdvisor: { type: mongoose.Schema.Types.ObjectId, ref: "Staff" },
   remarks: { type: String },
 
   // Intern Syllabus
-  internSyllabusStatus: { type: String, enum: ["Not Started", "In Progress", "Completed"], default: "Not Started" },
+  internSyllabusStatus: { type: String, enum: ["Not Started", "Learning", "mini Project","Main Project"], default: "Not Started" },
 
   // Placement Information (Optional)
-  placementStatus: { type: String, enum: ["Placed", "Not Placed", "In Progress"], default: "Not Placed" },
+  placementStatus: { type: String, enum: ["To be started","In Progress","Offer Declined","Placed","Not Placed"], default: "Not Placed" },
   linkedin: { type: String },
   portfolio: { type: String },
   companyName: { type: String },
