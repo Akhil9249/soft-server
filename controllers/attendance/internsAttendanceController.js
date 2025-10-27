@@ -1082,6 +1082,234 @@ const getInternsByAttendanceDate = async (req, res) => {
   }
 };
 
+// -------------------- GET INTERNS ATTENDANCE BY MONTH --------------------
+const getInternsAttendanceByMonth = async (req, res) => {
+  try {
+    const { month, year, branchId, courseId, days, timingId } = req.query;
+    const userId = req.userId;
+
+    console.log("req.query", req.query);
+    
+    if (!month || !year) {
+      return res.status(400).json({ 
+        message: "Month and year parameters are required" 
+      });
+    }
+
+    console.log("month", month, "year", year, "branchId", branchId, "courseId", courseId, "days", days, "timingId", timingId);
+    
+    // Get number of days in the month
+    const daysInMonth = new Date(year, month, 0).getDate();
+    console.log("Days in month:", daysInMonth);
+    
+    // Build query for attendance records
+    const query = { 
+      isActive: true,
+      date: {
+        $gte: `${year}-${month.toString().padStart(2, '0')}-01`,
+        $lte: `${year}-${month.toString().padStart(2, '0')}-${daysInMonth.toString().padStart(2, '0')}`
+      }
+    };
+
+    // Check user role and apply appropriate filtering
+    const userRole = await getUserRoleName(userId);
+    if (userRole === 'mentor') {
+      // For mentors, get all interns from mentor's weekly schedule
+      const mentorInterns = await getMentorInternsFromWeeklySchedule(userId);
+      const allowedInternIds = mentorInterns.interns.map(intern => intern._id);
+      
+      if (allowedInternIds.length === 0) {
+        return res.status(200).json({
+          message: "No interns found in your weekly schedule",
+          data: [],
+          totalCount: 0,
+          monthData: {
+            year: parseInt(year),
+            month: parseInt(month),
+            daysInMonth: daysInMonth,
+            days: Array.from({ length: daysInMonth }, (_, i) => i + 1)
+          }
+        });
+      }
+      
+      query.intern = { $in: allowedInternIds };
+    }
+    // For Super Admin and Admin, no additional filtering is applied - they can see all interns
+    
+    // Apply Course, Branch, and Batch filtering using WeeklySchedule
+    let allowedInternIds = null;
+    
+    // If any of the filters (courseId, branchId, days, timingId) are provided, use WeeklySchedule filtering
+    if (courseId || branchId || days || timingId) {
+      console.log("Applying WeeklySchedule-based filtering");
+      
+      // Get WeeklySchedule-based intern IDs
+      const weeklyScheduleResult = await getInternsByWeeklyScheduleFilters({
+        timingId,
+        days,
+        courseId,
+        branchId,
+        mentorId: userRole === 'mentor' ? userId : null
+      });
+      
+      if (weeklyScheduleResult.interns.length === 0) {
+        return res.status(200).json({
+          message: weeklyScheduleResult.message,
+          data: [],
+          totalCount: 0,
+          monthData: {
+            year: parseInt(year),
+            month: parseInt(month),
+            daysInMonth: daysInMonth,
+            days: Array.from({ length: daysInMonth }, (_, i) => i + 1)
+          }
+        });
+      }
+      
+      const weeklyScheduleInternIds = weeklyScheduleResult.interns.map(intern => intern._id);
+      
+      // If mentor filtering is already applied, intersect with WeeklySchedule results
+      if (query.intern && query.intern.$in) {
+        const currentAllowedIds = query.intern.$in.map(id => id.toString());
+        const intersection = currentAllowedIds.filter(id => 
+          weeklyScheduleInternIds.includes(id.toString())
+        );
+        
+        if (intersection.length === 0) {
+          return res.status(200).json({
+            message: "No interns found matching the specified criteria",
+            data: [],
+            totalCount: 0,
+            monthData: {
+              year: parseInt(year),
+              month: parseInt(month),
+              daysInMonth: daysInMonth,
+              days: Array.from({ length: daysInMonth }, (_, i) => i + 1)
+            }
+          });
+        }
+        
+        query.intern = { $in: intersection };
+      } else {
+        query.intern = { $in: weeklyScheduleInternIds };
+      }
+    }
+
+    // Get all attendance records for the month
+    const attendanceRecords = await InternsAttendance.find(query)
+      .populate({
+        path: 'intern',
+        select: 'fullName email role courseStatus branch course batch',
+        populate: [
+          {
+            path: 'branch',
+            select: 'branchName'
+          },
+          {
+            path: 'course',
+            select: 'courseName category',
+            populate: {
+              path: 'category',
+              select: 'categoryName'
+            }
+          }
+        ]
+      })
+      .populate('markedBy', 'fullName email')
+      .sort({ date: 1, 'intern.fullName': 1 });
+
+    console.log("Found attendance records:", attendanceRecords.length);
+
+    // Process the data to create a month view
+    const internMap = new Map();
+    
+    // Initialize all interns with empty attendance array
+    attendanceRecords.forEach(record => {
+      const internId = record.intern._id.toString();
+      if (!internMap.has(internId)) {
+        internMap.set(internId, {
+          _id: record.intern._id,
+          fullName: record.intern.fullName,
+          email: record.intern.email,
+          role: record.intern.role,
+          courseStatus: record.intern.courseStatus,
+          branchId: record.intern.branch?._id,
+          branchName: record.intern.branch?.branchName,
+          courseId: record.intern.course?._id,
+          courseName: record.intern.course?.courseName,
+          categoryId: record.intern.course?.category?._id,
+          categoryName: record.intern.course?.category?.categoryName,
+          attendance: new Array(daysInMonth).fill(null) // null for not marked
+        });
+      }
+    });
+
+    // Fill in attendance data
+    attendanceRecords.forEach(record => {
+      const internId = record.intern._id.toString();
+      const intern = internMap.get(internId);
+      
+      if (intern) {
+        // Extract day from date (YYYY-MM-DD format)
+        const day = parseInt(record.date.split('-')[2]) - 1; // Convert to 0-based index
+        if (day >= 0 && day < daysInMonth) {
+          intern.attendance[day] = {
+            status: record.status,
+            checkInTime: record.checkInTime,
+            checkOutTime: record.checkOutTime,
+            totalHours: record.totalHours,
+            remarks: record.remarks,
+            markedBy: record.markedBy,
+            attendanceId: record._id
+          };
+        }
+      }
+    });
+
+    // Convert map to array
+    const monthData = Array.from(internMap.values());
+
+    // Calculate summary statistics
+    const summary = {
+      totalInterns: monthData.length,
+      totalDays: daysInMonth,
+      presentCount: 0,
+      absentCount: 0,
+      notMarkedCount: 0
+    };
+
+    monthData.forEach(intern => {
+      intern.attendance.forEach(dayAttendance => {
+        if (dayAttendance === null) {
+          summary.notMarkedCount++;
+        } else if (dayAttendance.status === true) {
+          summary.presentCount++;
+        } else if (dayAttendance.status === false) {
+          summary.absentCount++;
+        }
+      });
+    });
+
+    res.status(200).json({
+      message: "Interns attendance for month retrieved successfully",
+      data: monthData,
+      totalCount: monthData.length,
+      monthData: {
+        year: parseInt(year),
+        month: parseInt(month),
+        daysInMonth: daysInMonth,
+        days: Array.from({ length: daysInMonth }, (_, i) => i + 1)
+      },
+      summary: summary
+    });
+  } catch (error) {
+    console.error("Error retrieving interns attendance by month:", error);
+    res.status(500).json({ 
+      message: error.message || "Error retrieving interns attendance by month" 
+    });
+  }
+};
+
 module.exports = {
   addInternsAttendance,
   getInternsAttendance,
@@ -1094,5 +1322,6 @@ module.exports = {
   updateSingleInternAttendance,
   getAttendanceSummaryReport,
   getInternsByAttendanceDate,
-  getMentorInterns
+  getMentorInterns,
+  getInternsAttendanceByMonth
 };

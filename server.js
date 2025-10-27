@@ -92,6 +92,7 @@ app.use("/api/topics", topicRoutes);
 app.use("/api/batches", batchRoutes);
 app.use("/api/timings", timingRoutes);
 app.use("/api/weekly-schedules", weeklyScheduleRoutes);
+// app.use("/api/weekly-schedule", weeklyScheduleRoutes);
 
 app.use("/api/pages", pageRoutes);
 app.use("/api/notifications", notificationRoutes);

@@ -8,11 +8,6 @@ const roleSchema = new mongoose.Schema({
     trim: true,
     unique: true
   },
-  // role: {
-  //   type: String,
-  //   enum: ["Super Admin", "Admin", "Mentor", "Accountant", "Intern", "Career advisor", "Placement coordinator", "Front office staff"],
-  //   required: true
-  // },
   description: { 
     type: String, 
     required: true,

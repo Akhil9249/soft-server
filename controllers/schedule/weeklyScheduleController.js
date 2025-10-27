@@ -371,6 +371,212 @@ const removeBatchFromSubDetails = async (req, res) => {
   }
 };
 
+// Update Subject in Sub Details
+const updateSubjectInSubDetails = async (req, res) => {
+  try {
+    const { timeIndex, subDetailIndex, subject } = req.body;
+    const { id } = req.params; // weekly schedule id
+
+    console.log('Updating subject in sub details:', { timeIndex, subDetailIndex, subject });
+
+    if (timeIndex === undefined || subDetailIndex === undefined) {
+      return res.status(400).json({ message: "Time index and sub detail index are required" });
+    }
+
+    const weeklySchedule = await WeeklySchedule.findById(id);
+    if (!weeklySchedule) {
+      return res.status(404).json({ message: "Weekly schedule not found" });
+    }
+
+    if (!weeklySchedule.schedule[timeIndex] || 
+        !weeklySchedule.schedule[timeIndex].sub_details[subDetailIndex]) {
+      return res.status(404).json({ message: "Specified schedule path not found" });
+    }
+
+    // Update the subject
+    weeklySchedule.schedule[timeIndex].sub_details[subDetailIndex].subject = subject || '';
+
+    await weeklySchedule.save();
+
+    const updatedSchedule = await WeeklySchedule.findById(id)
+      .populate({
+        path: 'mentor',
+        select: 'fullName email'
+      })
+      .populate({
+        path: 'schedule.time',
+        select: 'timeSlot'
+      })
+      .populate({
+        path: 'schedule.sub_details.batch',
+        select: 'batchName branchName'
+      });
+
+    res.status(200).json({ message: "Subject updated successfully", data: updatedSchedule });
+  } catch (error) {
+    console.error('Error updating subject in sub details:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get All Mentors with Their Assigned Batches
+const getAllMentorsWithBatches = async (req, res) => {
+  try {
+    console.log('Fetching all mentors with their assigned batches...');
+    
+    // Get all weekly schedules with populated data
+    const weeklySchedules = await WeeklySchedule.find()
+      .populate({
+        path: 'mentor',
+        select: 'fullName email role',
+        populate: {
+          path: 'role',
+          select: 'role'
+        }
+      })
+      .populate({
+        path: 'schedule.time',
+        select: 'timeSlot'
+      })
+      .populate({
+        path: 'schedule.sub_details.batch',
+        select: 'batchName branch',
+        populate: [
+          {
+            path: 'branch',
+            select: 'branchName'
+          },
+          {
+            path: 'interns',
+            select: 'course',
+            populate: {
+              path: 'course',
+              select: 'courseName'
+            }
+          }
+        ]
+      });
+
+    // Process the data to create a structured list of mentors with their batches
+    const mentorsWithBatches = [];
+    const mentorMap = new Map();
+
+    weeklySchedules.forEach(schedule => {
+      const mentor = schedule.mentor;
+      if (!mentor) return;
+
+      const mentorId = mentor._id.toString();
+      
+      // Initialize mentor if not exists
+      if (!mentorMap.has(mentorId)) {
+        mentorMap.set(mentorId, {
+          _id: mentor._id,
+          fullName: mentor.fullName,
+          email: mentor.email,
+          role: mentor.role?.role || 'mentor',
+          batches: new Set(),
+          scheduleDetails: []
+        });
+      }
+
+      const mentorData = mentorMap.get(mentorId);
+
+      // Process schedule details
+      schedule.schedule.forEach(timeSlot => {
+        const timeSlotData = {
+          timeSlot: timeSlot.time?.timeSlot || 'N/A',
+          subDetails: []
+        };
+
+        timeSlot.sub_details.forEach(subDetail => {
+          const subDetailData = {
+            days: subDetail.days,
+            subject: subDetail.subject || 'N/A',
+            batches: []
+          };
+
+          subDetail.batch.forEach(batch => {
+            if (batch) {
+              // Add batch to mentor's batch set
+              mentorData.batches.add(batch._id.toString());
+              
+              // Extract course information from interns
+              const courses = new Set();
+              if (batch.interns && batch.interns.length > 0) {
+                batch.interns.forEach(intern => {
+                  if (intern.course && intern.course.courseName) {
+                    courses.add(intern.course.courseName);
+                  }
+                });
+              }
+              const courseNames = Array.from(courses).join(', ') || 'N/A';
+
+              // Add batch details to sub detail
+              subDetailData.batches.push({
+                _id: batch._id,
+                batchName: batch.batchName,
+                branchName: batch.branch?.branchName || 'N/A',
+                courseName: courseNames
+              });
+            }
+          });
+
+          timeSlotData.subDetails.push(subDetailData);
+        });
+
+        mentorData.scheduleDetails.push(timeSlotData);
+      });
+    });
+
+    // Convert Map to Array and format batches
+    mentorsWithBatches.push(...Array.from(mentorMap.values()).map(mentor => ({
+      ...mentor,
+      batches: Array.from(mentor.batches).map(batchId => {
+        // Find batch details from any schedule
+        for (const schedule of weeklySchedules) {
+          for (const timeSlot of schedule.schedule) {
+            for (const subDetail of timeSlot.sub_details) {
+              for (const batch of subDetail.batch) {
+                if (batch && batch._id.toString() === batchId) {
+                  // Extract course information from interns
+                  const courses = new Set();
+                  if (batch.interns && batch.interns.length > 0) {
+                    batch.interns.forEach(intern => {
+                      if (intern.course && intern.course.courseName) {
+                        courses.add(intern.course.courseName);
+                      }
+                    });
+                  }
+                  const courseNames = Array.from(courses).join(', ') || 'N/A';
+
+                  return {
+                    _id: batch._id,
+                    batchName: batch.batchName,
+                    branchName: batch.branch?.branchName || 'N/A',
+                    courseName: courseNames
+                  };
+                }
+              }
+            }
+          }
+        }
+        return null;
+      }).filter(batch => batch !== null)
+    })));
+
+    console.log(`Found ${mentorsWithBatches.length} mentors with assigned batches`);
+    
+    res.status(200).json({ 
+      message: "Mentors with assigned batches retrieved successfully", 
+      data: mentorsWithBatches,
+      totalCount: mentorsWithBatches.length
+    });
+  } catch (error) {
+    console.error('Error fetching mentors with batches:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createWeeklySchedule,
   getWeeklySchedules,
@@ -381,4 +587,6 @@ module.exports = {
   addSubDetailsToTime,
   addBatchToSubDetails,
   removeBatchFromSubDetails,
+  updateSubjectInSubDetails,
+  getAllMentorsWithBatches,
 };

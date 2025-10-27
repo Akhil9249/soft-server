@@ -13,7 +13,8 @@ const {
   updateSingleInternAttendance,
   getAttendanceSummaryReport,
   getInternsByAttendanceDate,
-  getMentorInterns
+  getMentorInterns,
+  getInternsAttendanceByMonth
 } = require("../controllers/attendance/internsAttendanceController");
 
 // Import middleware for role checking
@@ -34,12 +35,6 @@ const checkRoles = (roles) => {
 
 // -------------------- INTERNS ATTENDANCE ROUTES --------------------
 
-function Temp(req, res, next) {
-  console.log("Temp");
-  // next();
-  
-}
-
 
 
 // GET /api/interns-attendance - Get all interns attendance with pagination and filters
@@ -59,6 +54,9 @@ router.get("/summary/overview", checkAuth, checkRoles(["super admin", "admin", "
 
 // GET /api/interns-attendance/mentor-interns/:mentorId? - Get interns for a mentor based on WeeklySchedule
 router.get("/mentor-interns/:mentorId?", checkAuth, checkRoles(["super admin", "admin", "mentor"]), asyncHandler(getMentorInterns));
+
+// GET /api/interns-attendance/month - Get all interns attendance for a specific month
+router.get("/month", checkAuth, checkRoles(["super admin", "admin", "mentor"]), asyncHandler(getInternsAttendanceByMonth));
 
 // GET /api/interns-attendance/:id - Get single interns attendance by ID
 router.get("/:id", checkAuth, checkRoles(["super admin", "admin", "mentor"]), asyncHandler(getInternsAttendanceById));
