@@ -2,12 +2,13 @@
 const express = require("express");
 const router = express.Router();
 const taskController = require("../controllers/task-management/taskController");
+const { upload } = require("../uploads/multer");
 
 // Basic CRUD operations
 router.get("/", taskController.getTasks);
-router.post("/", taskController.createTask);
+router.post("/", upload.single('attachments'), taskController.createTask);
 router.get("/:id", taskController.getTaskById);
-router.put("/:id", taskController.updateTask);
+router.put("/:id", upload.single('attachments'), taskController.updateTask);
 router.delete("/:id", taskController.deleteTask);
 
 // Additional task operations

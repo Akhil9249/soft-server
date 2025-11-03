@@ -423,6 +423,8 @@ const updateSubjectInSubDetails = async (req, res) => {
 const getAllMentorsWithBatches = async (req, res) => {
   try {
     console.log('Fetching all mentors with their assigned batches...');
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
     
     // Get all weekly schedules with populated data
     const weeklySchedules = await WeeklySchedule.find()
@@ -565,11 +567,54 @@ const getAllMentorsWithBatches = async (req, res) => {
     })));
 
     console.log(`Found ${mentorsWithBatches.length} mentors with assigned batches`);
-    
-    res.status(200).json({ 
-      message: "Mentors with assigned batches retrieved successfully", 
-      data: mentorsWithBatches,
-      totalCount: mentorsWithBatches.length
+
+    // Backend-driven pagination
+    const totalCount = mentorsWithBatches.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+    const currentPage = Math.min(Math.max(page, 1), totalPages);
+    const skip = (currentPage - 1) * limit;
+    const pagedMentors = mentorsWithBatches.slice(skip, skip + limit);
+
+    const hasNextPage = currentPage < totalPages;
+    const hasPrevPage = currentPage > 1;
+    const startIndex = totalCount === 0 ? 0 : skip + 1;
+    const endIndex = Math.min(skip + limit, totalCount);
+
+    const getPageNumbers = (cp, tp) => {
+      const maxVisible = 5;
+      let startPage, endPage;
+      if (tp <= maxVisible) {
+        startPage = 1; endPage = tp;
+      } else if (cp <= 3) {
+        startPage = 1; endPage = maxVisible;
+      } else if (cp >= tp - 2) {
+        startPage = tp - maxVisible + 1; endPage = tp;
+      } else {
+        startPage = cp - 2; endPage = cp + 2;
+      }
+      return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+    };
+
+    res.status(200).json({
+      message: "Mentors with assigned batches retrieved successfully",
+      data: pagedMentors,
+      pagination: {
+        currentPage,
+        totalPages,
+        totalCount,
+        limit,
+        skip,
+        hasNextPage,
+        hasPrevPage,
+        startIndex,
+        endIndex,
+        pageNumbers: getPageNumbers(currentPage, totalPages),
+        displayInfo: {
+          showing: `${startIndex} to ${endIndex}`,
+          total: totalCount,
+          pageInfo: `Page ${currentPage} of ${totalPages}`
+        }
+      }
     });
   } catch (error) {
     console.error('Error fetching mentors with batches:', error);

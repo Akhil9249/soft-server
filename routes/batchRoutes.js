@@ -2,6 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const batchController = require("../controllers/schedule/batchController");
+const { upload } = require("../uploads/multer");
 
 router.get("/", batchController.getBatches);
 router.get("/all", batchController.getAllBatches);

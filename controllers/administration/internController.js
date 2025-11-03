@@ -68,6 +68,22 @@ const addIntern = async (req, res) => {
       return res.status(400).json({ message: "Intern with this official email already exists" });
     }
 
+    // Handle uploaded files
+    let photoUrl = photo || null;
+    let resumeUrl = resume || null;
+    
+    if (req.files) {
+      // Handle photo upload
+      if (req.files.photo && req.files.photo[0]) {
+        photoUrl = req.files.photo[0].path; // Cloudinary URL
+      }
+      
+      // Handle resume upload
+      if (req.files.resume && req.files.resume[0]) {
+        resumeUrl = req.files.resume[0].path; // Cloudinary URL
+      }
+    }
+
     // Hash password
     const hashedPassword = await generatePasswordHash(password);
 
@@ -86,7 +102,7 @@ const addIntern = async (req, res) => {
       internPermanentAddress,
       district,
       state,
-      photo,
+      photo: photoUrl,
       course,
       branch,
       courseStartedDate,
@@ -101,7 +117,7 @@ const addIntern = async (req, res) => {
       portfolio,
       companyName,
       jobRole,
-      resume,
+      resume: resumeUrl,
       role: req.body.role || "Intern",
       officialEmail,
       password: hashedPassword,
@@ -320,6 +336,35 @@ const updateIntern = async (req, res) => {
       }
     }
 
+    // Handle uploaded files
+    // First, get existing intern to preserve existing URLs if no new file is uploaded
+    const existingIntern = await Intern.findById(req.params.id);
+    let photoUrl = existingIntern ? existingIntern.photo : undefined;
+    let resumeUrl = existingIntern ? existingIntern.resume : undefined;
+    
+    // If photo is provided in body (existing URL as string), use it
+    if (photo && typeof photo === 'string' && photo.trim() !== '') {
+      photoUrl = photo;
+    }
+    
+    // If resume is provided in body (existing URL as string), use it
+    if (resume && typeof resume === 'string' && resume.trim() !== '') {
+      resumeUrl = resume;
+    }
+    
+    // Override with new files if uploaded
+    if (req.files) {
+      // Handle photo upload
+      if (req.files.photo && req.files.photo[0]) {
+        photoUrl = req.files.photo[0].path; // Cloudinary URL
+      }
+      
+      // Handle resume upload
+      if (req.files.resume && req.files.resume[0]) {
+        resumeUrl = req.files.resume[0].path; // Cloudinary URL
+      }
+    }
+
     // Hash password if provided
     let hashedPassword;
     if (password) {
@@ -341,7 +386,7 @@ const updateIntern = async (req, res) => {
       internPermanentAddress,
       district,
       state,
-      photo,
+      photo: photoUrl,
       course,
       branch,
       courseStartedDate,
@@ -356,7 +401,7 @@ const updateIntern = async (req, res) => {
       portfolio,
       companyName,
       jobRole,
-      resume,
+      resume: resumeUrl,
       role,
       officialEmail,
       isActive

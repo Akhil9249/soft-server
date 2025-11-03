@@ -125,6 +125,22 @@ const addStaff = async (req, res) => {
       return res.status(400).json({ message: "Staff with this official email already exists" });
     }
 
+    // Handle uploaded files
+    let photoUrl = photo || null;
+    let resumeUrl = resume || null;
+    
+    if (req.files) {
+      // Handle photo upload
+      if (req.files.photo && req.files.photo[0]) {
+        photoUrl = req.files.photo[0].path; // Cloudinary URL
+      }
+      
+      // Handle resume upload
+      if (req.files.resume && req.files.resume[0]) {
+        resumeUrl = req.files.resume[0].path; // Cloudinary URL
+      }
+    }
+
     // Hash password
     const hashedPassword = await generatePasswordHash(password);
 
@@ -139,14 +155,14 @@ const addStaff = async (req, res) => {
       staffPermanentAddress,
       district,
       state,
-      photo,
+      photo: photoUrl,
       department,
       branch,
       yearsOfExperience: yearsOfExperience || 0,
       dateOfJoining,
       employmentStatus,
       resignationDate,
-      resume,
+      resume: resumeUrl,
       remarks,
       role: role,
       officialEmail,
@@ -162,7 +178,7 @@ const addStaff = async (req, res) => {
 
     // Create weekly schedule if the staff member is a mentor
     // Note: We'll check the role after populating it
-    if (populatedStaff.role && populatedStaff.role.role === 'Mentor') {
+    if (populatedStaff.role && populatedStaff.role.role === 'mentor') {
       try {
         await createDefaultWeeklySchedule(newStaff._id);
         console.log(`Weekly schedule created for new mentor: ${newStaff.fullName}`);
@@ -193,6 +209,7 @@ const getStaff = async (req, res) => {
     const search = req.query.search || '';
     const department = req.query.department || '';
     const employmentStatus = req.query.employmentStatus || '';
+    const branch = req.query.branch || '';
 
     // Build query object
     let query = {};
@@ -215,6 +232,12 @@ const getStaff = async (req, res) => {
     }
     if (employmentStatus) {
       query.employmentStatus = employmentStatus;
+    }
+    if (branch) {
+      // Validate that branch is a valid ObjectId
+      if (mongoose.Types.ObjectId.isValid(branch)) {
+        query.branch = branch;
+      }
     }
 
     // Get total count for pagination
@@ -331,6 +354,22 @@ const updateStaff = async (req, res) => {
       branch = null; // Set to null if empty string
     }
 
+    // Handle uploaded files
+    let photoUrl = photo || undefined;
+    let resumeUrl = resume || undefined;
+    
+    if (req.files) {
+      // Handle photo upload - only update if new file is uploaded
+      if (req.files.photo && req.files.photo[0]) {
+        photoUrl = req.files.photo[0].path; // Cloudinary URL
+      }
+      
+      // Handle resume upload - only update if new file is uploaded
+      if (req.files.resume && req.files.resume[0]) {
+        resumeUrl = req.files.resume[0].path; // Cloudinary URL
+      }
+    }
+
     // Hash password if provided
     let hashedPassword;
     if (password) {
@@ -348,14 +387,14 @@ const updateStaff = async (req, res) => {
       staffPermanentAddress,
       district,
       state,
-      photo,
+      photo: photoUrl,
       department,
       branch,
       yearsOfExperience,
       dateOfJoining,
       employmentStatus,
       resignationDate,
-      resume,
+      resume: resumeUrl,
       remarks,
       role,
       officialEmail,
@@ -387,7 +426,7 @@ const updateStaff = async (req, res) => {
     }
 
     // Create weekly schedule if the staff member is updated to be a mentor and doesn't have one
-    if (staff.role && staff.role.role === 'Mentor') {
+    if (staff.role && staff.role.role === 'mentor') {
       try {
         await createDefaultWeeklySchedule(staff._id);
         console.log(`Weekly schedule created/verified for mentor: ${staff.fullName}`);

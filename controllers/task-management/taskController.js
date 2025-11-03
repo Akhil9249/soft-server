@@ -128,13 +128,13 @@ const createTask = async (req, res) => {
       });
     }
 
-    // Handle attachments field properly
-    let attachmentsValue = null;
-    if (attachments && typeof attachments === 'string' && attachments.trim() !== '') {
+    // Handle uploaded file
+    let attachmentsValue = attachments || null;
+    if (req.file) {
+      attachmentsValue = req.file.path; // Cloudinary URL
+    } else if (attachments && typeof attachments === 'string' && attachments.trim() !== '') {
+      // Existing URL passed from frontend
       attachmentsValue = attachments.trim();
-    } else if (attachments && typeof attachments === 'object' && Object.keys(attachments).length > 0) {
-      // If it's an object with content, convert to string or handle as needed
-      attachmentsValue = JSON.stringify(attachments);
     }
 
     const newTask = await Task.create({
@@ -345,6 +345,12 @@ const updateTask = async (req, res) => {
       }
     }
 
+    // Get current task to preserve existing attachment if no new file is uploaded
+    const currentTask = await Task.findById(req.params.id);
+    if (!currentTask) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
     const updateData = {};
     if (title) updateData.title = title.trim();
     if (taskType) updateData.taskType = taskType;
@@ -353,16 +359,26 @@ const updateTask = async (req, res) => {
     if (startDate) updateData.startDate = new Date(startDate);
     if (dueDate) updateData.dueDate = new Date(dueDate);
     if (description) updateData.description = description.trim();
-    if (attachments !== undefined) {
-      // Handle attachments field properly
-      if (attachments && typeof attachments === 'string' && attachments.trim() !== '') {
-        updateData.attachments = attachments.trim();
-      } else if (attachments && typeof attachments === 'object' && Object.keys(attachments).length > 0) {
-        updateData.attachments = JSON.stringify(attachments);
-      } else {
-        updateData.attachments = null;
-      }
+    
+    // Handle uploaded file - remove attachments from updateData first to handle it separately
+    delete updateData.attachments;
+    
+    let attachmentsValue = currentTask.attachments || undefined;
+    if (req.file) {
+      // New file uploaded
+      console.log('New attachment uploaded:', req.file.originalname, req.file.mimetype, req.file.path);
+      attachmentsValue = req.file.path; // Cloudinary URL
+      updateData.attachments = attachmentsValue;
+    } else if (attachments && typeof attachments === 'string' && attachments.trim() !== '') {
+      // Existing URL passed from frontend
+      console.log('Preserving existing attachment URL:', attachments);
+      attachmentsValue = attachments.trim();
+      updateData.attachments = attachmentsValue;
+    } else {
+      console.log('No attachment update - preserving existing:', currentTask.attachments);
     }
+    // If neither req.file nor attachments string is provided, attachmentsValue stays as existing value
+    // and we don't add it to updateData, so the existing value is preserved
     if (totalMarks !== undefined) updateData.totalMarks = Number(totalMarks);
     if (achievedMarks !== undefined) updateData.achievedMarks = Number(achievedMarks);
     if (status) updateData.status = status;

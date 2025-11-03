@@ -23,10 +23,16 @@ const createModule = async (req, res) => {
       return res.status(400).json({ message: "Module with this name already exists in this course" });
     }
 
+    // Handle uploaded file
+    let moduleImageUrl = moduleImage || null;
+    if (req.file) {
+      moduleImageUrl = req.file.path; // Cloudinary URL
+    }
+
     const newModule = await Module.create({
       moduleName,
       course,
-      moduleImage: moduleImage || null,
+      moduleImage: moduleImageUrl,
       topics: topics || [],
       totalTopics: topics ? topics.length : 0
     });
@@ -115,13 +121,33 @@ const getModuleById = async (req, res) => {
 // Update module
 const updateModule = async (req, res) => {
   try {
-    const { topics, course: newCourseId } = req.body;
+    const { topics, course: newCourseId, moduleImage } = req.body;
     
     // Get current module to check if course is changing
     const currentModule = await Module.findById(req.params.id);
     if (!currentModule) return res.status(404).json({ message: "Module not found" });
 
     const updateData = { ...req.body };
+    
+    // Handle uploaded file - remove moduleImage from updateData first to handle it separately
+    delete updateData.moduleImage;
+    
+    let moduleImageUrl = currentModule.moduleImage || undefined;
+    if (req.file) {
+      // New file uploaded
+      console.log('New file uploaded:', req.file.originalname, req.file.mimetype, req.file.path);
+      moduleImageUrl = req.file.path; // Cloudinary URL
+      updateData.moduleImage = moduleImageUrl;
+    } else if (moduleImage && typeof moduleImage === 'string' && moduleImage.trim() !== '') {
+      // Existing URL passed from frontend
+      console.log('Preserving existing URL:', moduleImage);
+      moduleImageUrl = moduleImage;
+      updateData.moduleImage = moduleImageUrl;
+    } else {
+      console.log('No file update - preserving existing:', currentModule.moduleImage);
+    }
+    // If neither req.file nor moduleImage string is provided, moduleImageUrl stays as existing value
+    // and we don't add it to updateData, so the existing value is preserved
     
     // If topics array is being updated, calculate totalTopics
     if (topics !== undefined) {

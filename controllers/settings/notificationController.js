@@ -74,10 +74,25 @@ const getNotifications = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
+    const { type, audience, branch } = req.query;
     
     // Calculate pagination values
     const skip = (page - 1) * limit;
-    const totalCount = await Notification.countDocuments({ isActive: true });
+
+    // Build filter
+    const filter = { isActive: true };
+    if (type) {
+      filter.type = type;
+    }
+    if (audience) {
+      filter.audience = audience;
+    }
+    if (branch) {
+      // branch can be ObjectId string or populated; store is ObjectId so match by id
+      filter.branch = branch;
+    }
+
+    const totalCount = await Notification.countDocuments(filter);
     const totalPages = Math.ceil(totalCount / limit);
     
     // Calculate pagination metadata
@@ -110,7 +125,7 @@ const getNotifications = async (req, res) => {
       return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
     };
 
-    const notifications = await Notification.find({ isActive: true })
+    const notifications = await Notification.find(filter)
       .populate('branch', 'branchName')
       .populate('batches', 'batchName')
       .populate('courses', 'courseName')
